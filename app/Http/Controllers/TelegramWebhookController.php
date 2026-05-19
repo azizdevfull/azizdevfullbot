@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Ai\Agents\TelegramAssistant;
 use App\Models\BusinessConnection;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -76,22 +75,73 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        $aiReply = $this->generateAiReply($text);
-
-        $this->sendMessage($chatId, $aiReply, $connectionId);
+        $this->streamAiReply($chatId, $connectionId, $text);
     }
 
-    private function generateAiReply(string $userMessage): string
+    private function streamAiReply(int|string $chatId, string $connectionId, string $userMessage): void
     {
-        try {
-            $response = (new TelegramAssistant)->prompt($userMessage);
+        $draftId = random_int(1, 2_147_483_647);
+        $accumulated = '';
+        $lastSent = 0.0;
 
-            return $response->text;
-        } catch (\Throwable $e) {
-            Log::channel('telegram')->error('AI reply failed', ['error' => $e->getMessage()]);
+        // Show "Thinking..." placeholder immediately
+        $this->sendMessageDraft($chatId, $draftId, '');
 
-            return config('telegram.fallback_reply', 'Xabaringiz qabul qilindi. Tez orada javob beraman! ✅');
-        }
+        $geminiKey = config('ai.providers.gemini.key');
+        $model = 'gemini-flash-lite-latest';
+        $instructions = trim((string) config('telegram.ai_instructions'));
+
+        $payload = json_encode([
+            'system_instruction' => ['parts' => [['text' => $instructions]]],
+            'contents' => [['role' => 'user', 'parts' => [['text' => $userMessage]]]],
+        ]);
+
+        $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/{$model}:streamGenerateContent?key={$geminiKey}&alt=sse");
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_WRITEFUNCTION => function ($ch, $data) use (&$accumulated, &$lastSent, $chatId, $draftId) {
+                foreach (explode("\n", $data) as $line) {
+                    if (str_starts_with($line, 'data: ')) {
+                        $chunk = json_decode(substr($line, 6), true);
+                        $text = $chunk['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                        if ($text !== '') {
+                            $accumulated .= $text;
+                        }
+                    }
+                }
+
+                $now = microtime(true);
+                if ($accumulated !== '' && ($now - $lastSent) >= 0.6) {
+                    $this->sendMessageDraft($chatId, $draftId, $accumulated);
+                    $lastSent = $now;
+                }
+
+                return strlen($data);
+            },
+        ]);
+
+        curl_exec($ch);
+        curl_close($ch);
+
+        // Persist final message
+        $finalText = $accumulated !== ''
+            ? $accumulated
+            : config('telegram.fallback_reply', 'Xabaringiz qabul qilindi. Tez orada javob beraman! ✅');
+
+        $this->sendMessage($chatId, $finalText, $connectionId);
+    }
+
+    private function sendMessageDraft(int|string $chatId, int $draftId, string $text): void
+    {
+        $token = config('telegram.bot_token');
+
+        Http::post("https://api.telegram.org/bot{$token}/sendMessageDraft", [
+            'chat_id' => $chatId,
+            'draft_id' => $draftId,
+            'text' => $text,
+        ]);
     }
 
     private function fetchAndSaveConnection(string $connectionId): ?BusinessConnection

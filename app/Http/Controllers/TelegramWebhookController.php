@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Ai\Agents\TelegramAssistant;
 use App\Models\BusinessConnection;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -75,7 +76,22 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        $this->sendMessage($chatId, config('telegram.auto_reply_text'), $connectionId);
+        $aiReply = $this->generateAiReply($text);
+
+        $this->sendMessage($chatId, $aiReply, $connectionId);
+    }
+
+    private function generateAiReply(string $userMessage): string
+    {
+        try {
+            $response = (new TelegramAssistant)->prompt($userMessage);
+
+            return $response->text;
+        } catch (\Throwable $e) {
+            Log::channel('telegram')->error('AI reply failed', ['error' => $e->getMessage()]);
+
+            return config('telegram.fallback_reply', 'Xabaringiz qabul qilindi. Tez orada javob beraman! ✅');
+        }
     }
 
     private function fetchAndSaveConnection(string $connectionId): ?BusinessConnection

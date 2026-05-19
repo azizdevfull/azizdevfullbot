@@ -38,6 +38,10 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             return;
         }
 
+        if (BotSetting::get('ai_enabled', '1') !== '1') {
+            return;
+        }
+
         $this->sendTyping($token);
 
         $combined = count($messages) === 1

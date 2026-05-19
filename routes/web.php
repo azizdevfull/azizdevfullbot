@@ -15,7 +15,8 @@ Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AdminController::class, 'login'])->name('login');
-    Route::post('login', [AdminController::class, 'authenticate'])->name('authenticate');
+    Route::post('otp/request', [AdminController::class, 'requestOtp'])->name('otp.request');
+    Route::post('otp/verify', [AdminController::class, 'verifyOtp'])->name('otp.verify');
     Route::post('logout', [AdminController::class, 'logout'])->name('logout');
 
     Route::middleware('admin.auth')->group(function () {

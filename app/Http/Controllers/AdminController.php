@@ -7,23 +7,57 @@ use App\Models\BusinessConnection;
 use App\Models\TelegramCommand;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 
 class AdminController extends Controller
 {
     public function login(): View
     {
-        return view('admin.login');
+        return view('admin.login', [
+            'otpSent' => session()->has('otp_pending'),
+        ]);
     }
 
-    public function authenticate(Request $request): RedirectResponse
+    public function requestOtp(Request $request): RedirectResponse
     {
-        $request->validate(['password' => 'required']);
+        $chatId = config('admin.telegram_chat_id')
+            ?? BusinessConnection::first()?->user_chat_id;
 
-        if ($request->input('password') !== config('admin.password')) {
-            return back()->withErrors(['password' => 'Parol noto\'g\'ri.']);
+        if (! $chatId) {
+            return back()->withErrors(['otp' => 'Admin Telegram chat ID sozlanmagan.']);
         }
 
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        Cache::put('admin_otp', $otp, now()->addMinutes(5));
+
+        $token = config('telegram.bot_token');
+
+        Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+            'chat_id' => $chatId,
+            'text' => "🔐 Admin panel kirish kodi:\n\n<b>{$otp}</b>\n\n5 daqiqa amal qiladi.",
+            'parse_mode' => 'HTML',
+        ]);
+
+        $request->session()->put('otp_pending', true);
+
+        return back();
+    }
+
+    public function verifyOtp(Request $request): RedirectResponse
+    {
+        $request->validate(['otp' => 'required|string|size:6']);
+
+        $storedOtp = Cache::get('admin_otp');
+
+        if (! $storedOtp || $request->input('otp') !== $storedOtp) {
+            return back()->withErrors(['otp' => 'Kod noto\'g\'ri yoki muddati o\'tgan.']);
+        }
+
+        Cache::forget('admin_otp');
+        $request->session()->forget('otp_pending');
         $request->session()->put('admin_authenticated', true);
 
         return redirect()->route('admin.dashboard');
@@ -42,6 +76,7 @@ class AdminController extends Controller
             'connections' => BusinessConnection::all(),
             'commands' => TelegramCommand::orderBy('command')->get(),
             'settings' => [
+                'ai_enabled' => BotSetting::get('ai_enabled', '1'),
                 'ai_instructions' => BotSetting::get('ai_instructions', config('telegram.ai_instructions')),
                 'fallback_reply' => BotSetting::get('fallback_reply', config('telegram.fallback_reply')),
                 'debounce_seconds' => BotSetting::get('debounce_seconds', config('telegram.debounce_seconds', 3)),
@@ -57,6 +92,7 @@ class AdminController extends Controller
     public function updateSettings(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'ai_enabled' => 'nullable|in:1',
             'ai_instructions' => 'required|string',
             'fallback_reply' => 'required|string',
             'debounce_seconds' => 'required|integer|min:1|max:30',
@@ -67,6 +103,7 @@ class AdminController extends Controller
             'working_hours_message' => 'required|string',
         ]);
 
+        BotSetting::set('ai_enabled', isset($data['ai_enabled']) ? '1' : '0');
         BotSetting::set('ai_instructions', $data['ai_instructions']);
         BotSetting::set('fallback_reply', $data['fallback_reply']);
         BotSetting::set('debounce_seconds', $data['debounce_seconds']);

@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'password' => env('ADMIN_PASSWORD', 'secret'),
+    'telegram_chat_id' => env('ADMIN_TELEGRAM_CHAT_ID'),
 ];

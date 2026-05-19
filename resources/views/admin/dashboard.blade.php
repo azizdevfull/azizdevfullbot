@@ -124,8 +124,14 @@
 
     {{-- General Settings --}}
     <section class="bg-white rounded-2xl border border-gray-200 shadow-sm mb-6">
-        <div class="px-6 py-4 border-b border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 class="font-semibold text-gray-800">Bot Sozlamalari</h2>
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="ai_enabled" value="1"
+                    {{ $settings['ai_enabled'] === '1' ? 'checked' : '' }}
+                    class="w-4 h-4 rounded border-gray-300 text-blue-600">
+                <span class="text-sm text-gray-600">AI yoqilgan</span>
+            </label>
         </div>
         <div class="px-6 py-4 space-y-4">
             <div>

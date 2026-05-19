@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessBusinessMessagesJob;
 use App\Models\BusinessConnection;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -75,7 +77,25 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        $this->sendMessage($chatId, config('telegram.auto_reply_text'), $connectionId);
+        $this->debounceAiReply($chatId, $connectionId, $text);
+    }
+
+    private function debounceAiReply(int|string $chatId, string $connectionId, string $text): void
+    {
+        $cacheKey = "telegram_pending_{$chatId}";
+        $lockKey = "telegram_job_{$chatId}";
+        $delay = config('telegram.debounce_seconds', 8);
+
+        $messages = Cache::get($cacheKey, []);
+        $messages[] = $text;
+        Cache::put($cacheKey, $messages, $delay + 5);
+
+        // Dispatch job only once per window
+        if (! Cache::has($lockKey)) {
+            Cache::put($lockKey, true, $delay);
+            ProcessBusinessMessagesJob::dispatch($chatId, $connectionId, $cacheKey)
+                ->delay(now()->addSeconds($delay));
+        }
     }
 
     private function fetchAndSaveConnection(string $connectionId): ?BusinessConnection

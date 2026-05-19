@@ -1,0 +1,147 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\BotSetting;
+use App\Models\BusinessConnection;
+use App\Models\TelegramCommand;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\View\View;
+
+class AdminController extends Controller
+{
+    public function login(): View
+    {
+        return view('admin.login', [
+            'otpSent' => session()->has('otp_pending'),
+        ]);
+    }
+
+    public function requestOtp(Request $request): RedirectResponse
+    {
+        $chatId = config('admin.telegram_chat_id')
+            ?? BusinessConnection::first()?->user_chat_id;
+
+        if (! $chatId) {
+            return back()->withErrors(['otp' => 'Admin Telegram chat ID sozlanmagan.']);
+        }
+
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        Cache::put('admin_otp', $otp, now()->addMinutes(5));
+
+        $token = config('telegram.bot_token');
+
+        Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+            'chat_id' => $chatId,
+            'text' => "🔐 Admin panel kirish kodi:\n\n<b>{$otp}</b>\n\n5 daqiqa amal qiladi.",
+            'parse_mode' => 'HTML',
+        ]);
+
+        $request->session()->put('otp_pending', true);
+
+        return back();
+    }
+
+    public function verifyOtp(Request $request): RedirectResponse
+    {
+        $request->validate(['otp' => 'required|string|size:6']);
+
+        $storedOtp = Cache::get('admin_otp');
+
+        if (! $storedOtp || $request->input('otp') !== $storedOtp) {
+            return back()->withErrors(['otp' => 'Kod noto\'g\'ri yoki muddati o\'tgan.']);
+        }
+
+        Cache::forget('admin_otp');
+        $request->session()->forget('otp_pending');
+        $request->session()->put('admin_authenticated', true);
+
+        return redirect()->route('admin.dashboard');
+    }
+
+    public function logout(Request $request): RedirectResponse
+    {
+        $request->session()->forget('admin_authenticated');
+
+        return redirect()->route('admin.login');
+    }
+
+    public function dashboard(): View
+    {
+        return view('admin.dashboard', [
+            'connections' => BusinessConnection::all(),
+            'commands' => TelegramCommand::orderBy('command')->get(),
+            'settings' => [
+                'ai_enabled' => BotSetting::get('ai_enabled', '1'),
+                'ai_instructions' => BotSetting::get('ai_instructions', config('telegram.ai_instructions')),
+                'fallback_reply' => BotSetting::get('fallback_reply', config('telegram.fallback_reply')),
+                'debounce_seconds' => BotSetting::get('debounce_seconds', config('telegram.debounce_seconds', 3)),
+                'working_hours_enabled' => BotSetting::get('working_hours_enabled', '0'),
+                'working_hours_start' => BotSetting::get('working_hours_start', '09:00'),
+                'working_hours_end' => BotSetting::get('working_hours_end', '18:00'),
+                'working_hours_timezone' => BotSetting::get('working_hours_timezone', 'Asia/Tashkent'),
+                'working_hours_message' => BotSetting::get('working_hours_message', 'Ish vaqtimiz 09:00–18:00. Tez orada javob beraman! ✅'),
+            ],
+        ]);
+    }
+
+    public function updateSettings(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ai_enabled' => 'nullable|in:1',
+            'ai_instructions' => 'required|string',
+            'fallback_reply' => 'required|string',
+            'debounce_seconds' => 'required|integer|min:1|max:30',
+            'working_hours_enabled' => 'nullable|in:1',
+            'working_hours_start' => 'required|date_format:H:i',
+            'working_hours_end' => 'required|date_format:H:i',
+            'working_hours_timezone' => 'required|timezone',
+            'working_hours_message' => 'required|string',
+        ]);
+
+        BotSetting::set('ai_enabled', isset($data['ai_enabled']) ? '1' : '0');
+        BotSetting::set('ai_instructions', $data['ai_instructions']);
+        BotSetting::set('fallback_reply', $data['fallback_reply']);
+        BotSetting::set('debounce_seconds', $data['debounce_seconds']);
+        BotSetting::set('working_hours_enabled', isset($data['working_hours_enabled']) ? '1' : '0');
+        BotSetting::set('working_hours_start', $data['working_hours_start']);
+        BotSetting::set('working_hours_end', $data['working_hours_end']);
+        BotSetting::set('working_hours_timezone', $data['working_hours_timezone']);
+        BotSetting::set('working_hours_message', $data['working_hours_message']);
+
+        return back()->with('success', 'Sozlamalar saqlandi.');
+    }
+
+    public function toggleConnection(BusinessConnection $connection): RedirectResponse
+    {
+        $connection->update(['is_enabled' => ! $connection->is_enabled]);
+
+        return back()->with('success', 'Ulanish holati o\'zgartirildi.');
+    }
+
+    public function storeCommand(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'command' => ['required', 'string', 'regex:/^[a-z0-9_]+$/'],
+            'reply' => 'required|string',
+        ]);
+
+        TelegramCommand::updateOrCreate(
+            ['command' => $data['command']],
+            ['reply' => $data['reply']]
+        );
+
+        return back()->with('success', 'Buyruq saqlandi.');
+    }
+
+    public function destroyCommand(TelegramCommand $telegramCommand): RedirectResponse
+    {
+        $telegramCommand->delete();
+
+        return back()->with('success', 'Buyruq o\'chirildi.');
+    }
+}

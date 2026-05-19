@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AdminAuth;
 use App\Http\Middleware\TelegramWebhookSecret;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -14,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'telegram.webhook.secret' => TelegramWebhookSecret::class,
+            'admin.auth' => AdminAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

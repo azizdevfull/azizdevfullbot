@@ -2,6 +2,7 @@
 
 namespace App\Ai\Agents;
 
+use App\Models\BotSetting;
 use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Attributes\Temperature;
@@ -19,6 +20,6 @@ class TelegramAssistant implements Agent
 
     public function instructions(): Stringable|string
     {
-        return config('telegram.ai_instructions');
+        return BotSetting::get('ai_instructions', config('telegram.ai_instructions'));
     }
 }

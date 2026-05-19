@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\ProcessBusinessMessagesJob;
 use App\Models\BusinessConnection;
+use App\Models\TelegramCommand;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
@@ -66,7 +67,8 @@ class TelegramWebhookController extends Controller
         if ($isFromOwner) {
             if (str_starts_with($text, '/')) {
                 $command = strtolower(explode(' ', ltrim(explode('@', $text)[0], '/'))[0]);
-                $reply = config("telegram.commands.{$command}");
+                $dbCommand = TelegramCommand::where('command', $command)->first();
+                $reply = $dbCommand?->reply ?? config("telegram.commands.{$command}");
 
                 if ($reply !== null) {
                     $this->deleteBusinessMessages($chatId, [$messageId], $connectionId);

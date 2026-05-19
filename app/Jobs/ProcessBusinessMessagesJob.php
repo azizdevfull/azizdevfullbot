@@ -3,6 +3,8 @@
 namespace App\Jobs;
 
 use App\Ai\Agents\TelegramAssistant;
+use App\Models\BotSetting;
+use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Cache;
@@ -27,6 +29,17 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             return;
         }
 
+        $token = config('telegram.bot_token');
+
+        if ($this->isOutsideWorkingHours()) {
+            $replyText = BotSetting::get('working_hours_message', config('telegram.fallback_reply'));
+            $this->sendMessage($token, $replyText);
+
+            return;
+        }
+
+        $this->sendTyping($token);
+
         $combined = count($messages) === 1
             ? $messages[0]
             : 'Foydalanuvchi ketma-ket bir nechta xabar yubordi: "'.implode('" va "', $messages).'". Barchasiga bitta tabiiy javob ber.';
@@ -36,14 +49,40 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             $replyText = $response->text;
         } catch (\Throwable $e) {
             Log::channel('telegram')->error('AI reply failed', ['error' => $e->getMessage()]);
-            $replyText = config('telegram.fallback_reply', 'Xabaringiz qabul qilindi. Tez orada javob beraman! ✅');
+            $replyText = BotSetting::get('fallback_reply', config('telegram.fallback_reply', 'Xabaringiz qabul qilindi. Tez orada javob beraman! ✅'));
         }
 
-        $token = config('telegram.bot_token');
+        $this->sendMessage($token, $replyText);
+    }
 
+    private function isOutsideWorkingHours(): bool
+    {
+        if (BotSetting::get('working_hours_enabled', '0') !== '1') {
+            return false;
+        }
+
+        $timezone = BotSetting::get('working_hours_timezone', 'Asia/Tashkent');
+        $now = Carbon::now($timezone);
+        $start = Carbon::createFromTimeString(BotSetting::get('working_hours_start', '09:00'), $timezone);
+        $end = Carbon::createFromTimeString(BotSetting::get('working_hours_end', '18:00'), $timezone);
+
+        return ! $now->between($start, $end);
+    }
+
+    private function sendTyping(string $token): void
+    {
+        Http::post("https://api.telegram.org/bot{$token}/sendChatAction", [
+            'chat_id' => $this->chatId,
+            'action' => 'typing',
+            'business_connection_id' => $this->connectionId,
+        ]);
+    }
+
+    private function sendMessage(string $token, string $text): void
+    {
         Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
             'chat_id' => $this->chatId,
-            'text' => $replyText,
+            'text' => $text,
             'business_connection_id' => $this->connectionId,
             'parse_mode' => 'HTML',
         ]);

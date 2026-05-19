@@ -11,7 +11,7 @@ use Laravel\Ai\Promptable;
 use Stringable;
 
 #[Provider(Lab::Gemini)]
-#[Model('gemini-2.0-flash')]
+#[Model('gemini-flash-lite-latest')]
 #[Temperature(0.7)]
 class TelegramAssistant implements Agent
 {

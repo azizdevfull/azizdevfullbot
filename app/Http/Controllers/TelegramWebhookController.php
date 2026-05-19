@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Ai\Agents\TelegramAssistant;
+use App\Jobs\ProcessBusinessMessagesJob;
 use App\Models\BusinessConnection;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -76,21 +77,24 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        $aiReply = $this->generateAiReply($text);
-
-        $this->sendMessage($chatId, $aiReply, $connectionId);
+        $this->debounceAiReply($chatId, $connectionId, $text);
     }
 
-    private function generateAiReply(string $userMessage): string
+    private function debounceAiReply(int|string $chatId, string $connectionId, string $text): void
     {
-        try {
-            $response = (new TelegramAssistant)->prompt($userMessage);
+        $cacheKey = "telegram_pending_{$chatId}";
+        $lockKey = "telegram_job_{$chatId}";
+        $delay = config('telegram.debounce_seconds', 8);
 
-            return $response->text;
-        } catch (\Throwable $e) {
-            Log::channel('telegram')->error('AI reply failed', ['error' => $e->getMessage()]);
+        $messages = Cache::get($cacheKey, []);
+        $messages[] = $text;
+        Cache::put($cacheKey, $messages, $delay + 5);
 
-            return config('telegram.fallback_reply', 'Xabaringiz qabul qilindi. Tez orada javob beraman! ✅');
+        // Dispatch job only once per window
+        if (! Cache::has($lockKey)) {
+            Cache::put($lockKey, true, $delay);
+            ProcessBusinessMessagesJob::dispatch($chatId, $connectionId, $cacheKey)
+                ->delay(now()->addSeconds($delay));
         }
     }
 

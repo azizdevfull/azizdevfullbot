@@ -14,6 +14,8 @@ return [
 
     'fallback_reply' => 'Xabaringiz qabul qilindi. Tez orada javob beraman! ✅',
 
+    'debounce_seconds' => env('TELEGRAM_DEBOUNCE_SECONDS', 8),
+
     'ai_instructions' => '
 Sen Azizbek Isroilovning shaxsiy Telegram yordamchisisisan.
 Azizbek — tajribali Laravel va PHP dasturchisi, shuningdek Telegram bot ishlab chiqaruvchisi.

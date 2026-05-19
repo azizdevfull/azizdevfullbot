@@ -29,11 +29,7 @@ class ProcessBusinessMessagesJob implements ShouldQueue
 
         $combined = count($messages) === 1
             ? $messages[0]
-            : implode("\n", array_map(
-                static fn (int $i, string $m) => ($i + 1).'. '.$m,
-                array_keys($messages),
-                $messages,
-            ));
+            : 'Foydalanuvchi ketma-ket bir nechta xabar yubordi: "'.implode('" va "', $messages).'". Barchasiga bitta tabiiy javob ber.';
 
         try {
             $response = (new TelegramAssistant)->prompt($combined);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\ProcessBusinessMessagesJob;
 use App\Models\BusinessConnection;
 use App\Models\TelegramCommand;
+use App\Telegram\BotAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
@@ -23,6 +24,8 @@ class TelegramWebhookController extends Controller
             $this->handleBusinessConnection($update['business_connection']);
         } elseif (isset($update['business_message'])) {
             $this->handleBusinessMessage($update['business_message']);
+        } elseif (isset($update['message'])) {
+            $this->handleDirectMessage($update['message']);
         }
 
         return response('OK');
@@ -67,6 +70,14 @@ class TelegramWebhookController extends Controller
         if ($isFromOwner) {
             if (str_starts_with($text, '/')) {
                 $command = strtolower(explode(' ', ltrim(explode('@', $text)[0], '/'))[0]);
+
+                if ($command === 'memode') {
+                    $this->deleteBusinessMessages($chatId, [$messageId], $connectionId);
+                    $this->toggleMeMode($chatId, $connection->user_chat_id);
+
+                    return;
+                }
+
                 $dbCommand = TelegramCommand::where('command', $command)->first();
                 $reply = $dbCommand?->reply ?? config("telegram.commands.{$command}");
 
@@ -80,6 +91,25 @@ class TelegramWebhookController extends Controller
         }
 
         $this->debounceAiReply($chatId, $connectionId, $text);
+    }
+
+    private function handleDirectMessage(array $message): void
+    {
+        $fromId = $message['from']['id'] ?? null;
+        $text = $message['text'] ?? '';
+        $chatId = $message['chat']['id'] ?? null;
+
+        if (! $fromId || ! $chatId || empty($text)) {
+            return;
+        }
+
+        $ownerConnection = BusinessConnection::whereNotNull('user_chat_id')->first();
+
+        if (! $ownerConnection || $fromId !== $ownerConnection->telegram_user_id) {
+            return;
+        }
+
+        (new BotAdmin($chatId))->handle($text);
     }
 
     private function debounceAiReply(int|string $chatId, string $connectionId, string $text): void
@@ -141,6 +171,29 @@ class TelegramWebhookController extends Controller
 
         if (! ($response->json('ok') ?? false)) {
             Log::channel('telegram')->warning('deleteBusinessMessages failed', $response->json());
+        }
+    }
+
+    private function toggleMeMode(int|string $chatId, int|string|null $ownerChatId): void
+    {
+        $key = "memode_{$chatId}";
+        $isActive = Cache::get($key, false);
+
+        if ($isActive) {
+            Cache::forget($key);
+            $status = 'Me Mode <b>o\'chirildi</b> ❌';
+        } else {
+            Cache::put($key, true, now()->addHours(24));
+            $status = 'Me Mode <b>yoqildi</b> ✅ — AI endi siz sifatida yozadi.';
+        }
+
+        if ($ownerChatId) {
+            $token = config('telegram.bot_token');
+            Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+                'chat_id' => $ownerChatId,
+                'text' => $status,
+                'parse_mode' => 'HTML',
+            ]);
         }
     }
 

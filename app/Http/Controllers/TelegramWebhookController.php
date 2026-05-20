@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProcessBusinessMessagesJob;
-use App\Models\BotSetting;
 use App\Models\BusinessConnection;
 use App\Models\TelegramCommand;
+use App\Telegram\BotAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
@@ -99,7 +99,7 @@ class TelegramWebhookController extends Controller
         $text = $message['text'] ?? '';
         $chatId = $message['chat']['id'] ?? null;
 
-        if (! $fromId || ! $chatId) {
+        if (! $fromId || ! $chatId || empty($text)) {
             return;
         }
 
@@ -109,35 +109,7 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        if (! str_starts_with($text, '/')) {
-            return;
-        }
-
-        $command = strtolower(explode(' ', ltrim(explode('@', $text)[0], '/'))[0]);
-
-        if ($command === 'memode') {
-            $this->toggleGlobalMeMode($chatId);
-        }
-    }
-
-    private function toggleGlobalMeMode(int|string $ownerChatId): void
-    {
-        $isActive = BotSetting::get('me_mode_global', '0') === '1';
-
-        if ($isActive) {
-            BotSetting::set('me_mode_global', '0');
-            $status = '🌍 Global Me Mode <b>o\'chirildi</b> ❌';
-        } else {
-            BotSetting::set('me_mode_global', '1');
-            $status = '🌍 Global Me Mode <b>yoqildi</b> ✅ — AI barcha chatlarda siz bo\'lib yozadi.';
-        }
-
-        $token = config('telegram.bot_token');
-        Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
-            'chat_id' => $ownerChatId,
-            'text' => $status,
-            'parse_mode' => 'HTML',
-        ]);
+        (new BotAdmin($chatId))->handle($text);
     }
 
     private function debounceAiReply(int|string $chatId, string $connectionId, string $text): void

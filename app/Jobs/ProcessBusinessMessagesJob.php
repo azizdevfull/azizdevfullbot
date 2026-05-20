@@ -49,7 +49,14 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             : 'Foydalanuvchi ketma-ket bir nechta xabar yubordi: "'.implode('" va "', $messages).'". Barchasiga bitta tabiiy javob ber.';
 
         try {
-            $response = (new TelegramAssistant)->prompt($combined);
+            $meModeActive = Cache::get("memode_{$this->chatId}", false)
+                || BotSetting::get('me_mode_global', '0') === '1';
+
+            $assistant = $meModeActive
+                ? new TelegramAssistant(meModeEnabled: true)
+                : new TelegramAssistant;
+
+            $response = $assistant->prompt($combined);
             $replyText = $response->text;
         } catch (\Throwable $e) {
             Log::channel('telegram')->error('AI reply failed', ['error' => $e->getMessage()]);

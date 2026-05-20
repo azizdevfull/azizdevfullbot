@@ -248,6 +248,19 @@
                 </div>
                 @error('ai_instructions')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
             </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                    Me Mode Ko'rsatmalar
+                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">/memode</span>
+                </label>
+                <p class="text-xs text-slate-400 mb-2">Chatda <code class="bg-slate-100 px-1 rounded">/memode</code> yozganingizda AI shu ko'rsatmalar bilan siz bo'lib yozadi.</p>
+                <div class="relative">
+                    <textarea name="me_mode_instructions" rows="7"
+                        class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-mono text-slate-700 leading-relaxed focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent focus:bg-white transition resize-none">{{ $settings['me_mode_instructions'] }}</textarea>
+                    <div class="absolute bottom-3 right-3 text-xs text-slate-300 font-mono pointer-events-none">me mode</div>
+                </div>
+                @error('me_mode_instructions')<p class="mt-1.5 text-xs text-red-500">{{ $message }}</p>@enderror
+            </div>
         </div>
     </div>
 

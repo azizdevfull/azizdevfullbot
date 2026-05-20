@@ -18,8 +18,14 @@ class TelegramAssistant implements Agent
 {
     use Promptable;
 
+    public function __construct(public readonly bool $meModeEnabled = false) {}
+
     public function instructions(): Stringable|string
     {
+        if ($this->meModeEnabled) {
+            return BotSetting::get('me_mode_instructions', config('telegram.me_mode_instructions'));
+        }
+
         return BotSetting::get('ai_instructions', config('telegram.ai_instructions'));
     }
 }

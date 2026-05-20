@@ -78,6 +78,7 @@ class AdminController extends Controller
             'settings' => [
                 'ai_enabled' => BotSetting::get('ai_enabled', '1'),
                 'ai_instructions' => BotSetting::get('ai_instructions', config('telegram.ai_instructions')),
+                'me_mode_instructions' => BotSetting::get('me_mode_instructions', config('telegram.me_mode_instructions')),
                 'fallback_reply' => BotSetting::get('fallback_reply', config('telegram.fallback_reply')),
                 'debounce_seconds' => BotSetting::get('debounce_seconds', config('telegram.debounce_seconds', 3)),
                 'working_hours_enabled' => BotSetting::get('working_hours_enabled', '0'),
@@ -94,6 +95,7 @@ class AdminController extends Controller
         $data = $request->validate([
             'ai_enabled' => 'nullable|in:1',
             'ai_instructions' => 'required|string',
+            'me_mode_instructions' => 'required|string',
             'fallback_reply' => 'required|string',
             'debounce_seconds' => 'required|integer|min:1|max:30',
             'working_hours_enabled' => 'nullable|in:1',
@@ -105,6 +107,7 @@ class AdminController extends Controller
 
         BotSetting::set('ai_enabled', isset($data['ai_enabled']) ? '1' : '0');
         BotSetting::set('ai_instructions', $data['ai_instructions']);
+        BotSetting::set('me_mode_instructions', $data['me_mode_instructions']);
         BotSetting::set('fallback_reply', $data['fallback_reply']);
         BotSetting::set('debounce_seconds', $data['debounce_seconds']);
         BotSetting::set('working_hours_enabled', isset($data['working_hours_enabled']) ? '1' : '0');

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Ai\Agents\TelegramAssistant;
 use App\Models\BotSetting;
+use App\Services\LanguageDetector;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -19,6 +20,7 @@ class ProcessBusinessMessagesJob implements ShouldQueue
         public readonly int|string $chatId,
         public readonly string $connectionId,
         public readonly string $cacheKey,
+        public readonly ?string $chatName = null,
     ) {}
 
     public function handle(): void
@@ -48,13 +50,17 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             ? $messages[0]
             : 'Foydalanuvchi ketma-ket bir nechta xabar yubordi: "'.implode('" va "', $messages).'". Barchasiga bitta tabiiy javob ber.';
 
+        $chatLang = LanguageDetector::detectAndSave($this->chatId, $combined, $this->chatName);
+
         try {
             $meModeActive = Cache::get("memode_{$this->chatId}", false)
                 || BotSetting::get('me_mode_global', '0') === '1';
 
-            $assistant = $meModeActive
-                ? new TelegramAssistant(meModeEnabled: true)
-                : new TelegramAssistant;
+            $assistant = new TelegramAssistant(
+                meModeEnabled: $meModeActive,
+                language: $chatLang->language_name,
+                addressForm: $chatLang->address_form ?? 'siz',
+            );
 
             $response = $assistant->prompt($combined);
             $replyText = $response->text;

@@ -4,6 +4,7 @@ namespace App\Telegram;
 
 use App\Models\BotSetting;
 use App\Models\BusinessConnection;
+use App\Models\ChatLanguage;
 use App\Models\TelegramCommand;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -48,6 +49,10 @@ class BotAdmin
             'addcmd' => $this->addCommand($args),
             'delcmd' => $this->deleteCommand($args),
             'connections' => $this->listConnections(),
+            'langlist' => $this->listChatLanguages(),
+            'langset' => $this->setChatLanguage($args),
+            'langreset' => $this->resetChatLanguage($args),
+            'address' => $this->setAddressForm($args),
             'prompt' => $this->startWaiting('ai_prompt', "✍️ Yangi <b>AI instructions</b> yuboring:\n\n<i>Bekor qilish: /cancel</i>"),
             'meprompt' => $this->startWaiting('me_prompt', "🎭 Yangi <b>Me Mode instructions</b> yuboring:\n\n<i>Bekor qilish: /cancel</i>"),
             'cancel' => $this->cancelWaiting(),
@@ -95,7 +100,11 @@ class BotAdmin
             ."/meprompt — Me Mode instructions\n"
             ."/fallback — Fallback javob\n"
             ."/debounce — Debounce soniyasi\n"
-            .'/connections — Business ulanishlar'
+            ."/connections — Business ulanishlar\n"
+            ."/langlist — Chat tillari\n"
+            ."/langset {id} {kod} — Til belgilash\n"
+            ."/langreset {id} — Avtoga qaytarish\n"
+            .'/address {id} siz|sen — Murojat shakli'
         );
     }
 
@@ -246,6 +255,80 @@ class BotAdmin
         )->implode("\n\n");
 
         $this->send("🔗 <b>Business Ulanishlar</b>\n\n{$list}");
+    }
+
+    private function listChatLanguages(): void
+    {
+        $langs = ChatLanguage::orderByDesc('updated_at')->get();
+
+        if ($langs->isEmpty()) {
+            $this->send('🌐 Hali hech qanday chat tili aniqlanmagan.');
+
+            return;
+        }
+
+        $list = $langs->map(fn ($l) => ($l->is_manual ? '✎' : '⟳')
+            ." <b>{$l->chat_name}</b> (<code>{$l->chat_id}</code>)"
+            ."\n   → {$l->language_name} [{$l->language_code}]"
+        )->implode("\n\n");
+
+        $this->send("🌐 <b>Chat Tillari</b>\n\n{$list}\n\n<i>/langset {chat_id} kk\n/langreset {chat_id}</i>");
+    }
+
+    private function setChatLanguage(string $args): void
+    {
+        $parts = explode(' ', trim($args), 2);
+
+        if (count($parts) < 2 || ! is_numeric($parts[0])) {
+            $this->send("❌ Format: /langset <b>chat_id</b> <b>kod</b>\n\nKodlar: uz, kk, ru, en, tr, ar");
+
+            return;
+        }
+
+        $chatId = (int) $parts[0];
+        $code = strtolower(trim($parts[1]));
+
+        $names = ['uz' => "O'zbek", 'kk' => 'Qazaq', 'ru' => 'Русский', 'en' => 'English', 'tr' => 'Türkçe', 'ar' => 'العربية'];
+
+        if (! isset($names[$code])) {
+            $this->send("❌ Noma'lum til kodi: <code>{$code}</code>\n\nMavjud: ".implode(', ', array_keys($names)));
+
+            return;
+        }
+
+        ChatLanguage::setForChat($chatId, $code, $names[$code], true);
+        $this->send("✅ <code>{$chatId}</code> → <b>{$names[$code]}</b> [{$code}] (qo'lda)");
+    }
+
+    private function resetChatLanguage(string $args): void
+    {
+        $chatId = (int) trim($args);
+
+        if (! $chatId) {
+            $this->send('❌ Format: /langreset <b>chat_id</b>');
+
+            return;
+        }
+
+        ChatLanguage::where('chat_id', $chatId)->update(['is_manual' => false]);
+        $this->send("⟳ <code>{$chatId}</code> avtomatik aniqlanishga qaytarildi.");
+    }
+
+    private function setAddressForm(string $args): void
+    {
+        $parts = explode(' ', trim($args), 2);
+
+        if (count($parts) < 2 || ! is_numeric($parts[0]) || ! in_array($parts[1], ['siz', 'sen'])) {
+            $this->send('❌ Format: /address <b>chat_id</b> <b>siz|sen</b>');
+
+            return;
+        }
+
+        $chatId = (int) $parts[0];
+        $form = $parts[1];
+
+        ChatLanguage::where('chat_id', $chatId)->update(['address_form' => $form]);
+        $this->send("✅ <code>{$chatId}</code> → murojat shakli: <b>{$form}</b>");
     }
 
     private function startWaiting(string $type, string $prompt): void

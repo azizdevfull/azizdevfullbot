@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BotSetting;
 use App\Models\BusinessConnection;
+use App\Models\ChatLanguage;
 use App\Models\TelegramCommand;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -74,6 +75,7 @@ class AdminController extends Controller
     {
         return view('admin.dashboard', [
             'connections' => BusinessConnection::all(),
+            'chatLanguages' => ChatLanguage::all()->keyBy('chat_id'),
             'commands' => TelegramCommand::orderBy('command')->get(),
             'settings' => [
                 'ai_enabled' => BotSetting::get('ai_enabled', '1'),
@@ -146,5 +148,43 @@ class AdminController extends Controller
         $telegramCommand->delete();
 
         return back()->with('success', 'Buyruq o\'chirildi.');
+    }
+
+    public function setChatLanguage(Request $request, int $chatId): RedirectResponse
+    {
+        $data = $request->validate([
+            'language_code' => 'required|string|max:10',
+            'language_name' => 'required|string|max:50',
+        ]);
+
+        $existing = ChatLanguage::forChat($chatId);
+
+        ChatLanguage::setForChat(
+            $chatId,
+            $data['language_code'],
+            $data['language_name'],
+            true,
+            $existing?->chat_name
+        );
+
+        return back()->with('success', 'Chat tili saqlandi.');
+    }
+
+    public function resetChatLanguage(int $chatId): RedirectResponse
+    {
+        ChatLanguage::where('chat_id', $chatId)->update(['is_manual' => false]);
+
+        return back()->with('success', 'Til avtomatik aniqlanishga qaytarildi.');
+    }
+
+    public function setAddressForm(Request $request, int $chatId): RedirectResponse
+    {
+        $data = $request->validate([
+            'address_form' => 'required|in:siz,sen',
+        ]);
+
+        ChatLanguage::where('chat_id', $chatId)->update(['address_form' => $data['address_form']]);
+
+        return back()->with('success', 'Murojat shakli saqlandi.');
     }
 }

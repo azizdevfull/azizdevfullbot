@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProcessBusinessMessagesJob;
+use App\Jobs\SendBusinessMessageJob;
 use App\Models\BusinessConnection;
+use App\Models\ChatLanguage;
 use App\Models\TelegramCommand;
 use App\Telegram\BotAdmin;
 use Illuminate\Http\Request;
@@ -90,7 +92,14 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        $this->debounceAiReply($chatId, $connectionId, $text);
+        if (empty($text)) {
+            $this->sendMediaReply($chatId, $connectionId);
+
+            return;
+        }
+
+        $chatName = $this->resolveChatName($message['chat'] ?? []);
+        $this->debounceAiReply($chatId, $connectionId, $text, $chatName);
     }
 
     private function handleDirectMessage(array $message): void
@@ -112,7 +121,7 @@ class TelegramWebhookController extends Controller
         (new BotAdmin($chatId))->handle($text);
     }
 
-    private function debounceAiReply(int|string $chatId, string $connectionId, string $text): void
+    private function debounceAiReply(int|string $chatId, string $connectionId, string $text, ?string $chatName = null): void
     {
         $cacheKey = "telegram_pending_{$chatId}";
         $lockKey = "telegram_job_{$chatId}";
@@ -122,10 +131,9 @@ class TelegramWebhookController extends Controller
         $messages[] = $text;
         Cache::put($cacheKey, $messages, $delay + 5);
 
-        // Dispatch job only once per window
         if (! Cache::has($lockKey)) {
             Cache::put($lockKey, true, $delay);
-            ProcessBusinessMessagesJob::dispatch($chatId, $connectionId, $cacheKey)
+            ProcessBusinessMessagesJob::dispatch($chatId, $connectionId, $cacheKey, $chatName)
                 ->delay(now()->addSeconds($delay));
         }
     }
@@ -195,6 +203,35 @@ class TelegramWebhookController extends Controller
                 'parse_mode' => 'HTML',
             ]);
         }
+    }
+
+    private function sendMediaReply(int|string $chatId, string $connectionId): void
+    {
+        $chatLang = ChatLanguage::forChat($chatId);
+        $langCode = $chatLang?->language_code ?? 'uz';
+        $addressForm = $chatLang?->address_form ?? 'siz';
+
+        $replies = config("telegram.media_replies.{$langCode}.{$addressForm}")
+            ?? config('telegram.media_replies.uz.siz');
+
+        $text = $replies[array_rand($replies)];
+
+        SendBusinessMessageJob::dispatch($chatId, $connectionId, $text)
+            ->delay(now()->addSeconds(3));
+    }
+
+    private function resolveChatName(array $chat): ?string
+    {
+        $parts = array_filter([
+            $chat['first_name'] ?? null,
+            $chat['last_name'] ?? null,
+        ]);
+
+        if ($parts) {
+            return implode(' ', $parts);
+        }
+
+        return $chat['username'] ?? null;
     }
 
     private function sendMessage(int|string $chatId, string $text, string $businessConnectionId): void

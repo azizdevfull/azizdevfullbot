@@ -84,12 +84,24 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             ]);
 
             ChatMessage::cleanupOld($this->chatId, 30);
+
+            $this->sendMessage($token, $replyText);
         } catch (\Throwable $e) {
             Log::channel('telegram')->error('AI reply failed', ['error' => $e->getMessage()]);
-            $replyText = BotSetting::get('fallback_reply', config('telegram.fallback_reply', 'Xabaringiz qabul qilindi. Tez orada javob beraman! ✅'));
-        }
 
-        $this->sendMessage($token, $replyText);
+            $adminChatId = config('admin.telegram_chat_id');
+            if ($adminChatId) {
+                $errorMsg = "⚠️ <b>AI Xatolik:</b>\n\n";
+                $errorMsg .= "Chat: <code>{$this->chatId}</code> ({$this->chatName})\n";
+                $errorMsg .= "Xato: <code>{$e->getMessage()}</code>";
+
+                Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+                    'chat_id' => $adminChatId,
+                    'text' => $errorMsg,
+                    'parse_mode' => 'HTML',
+                ]);
+            }
+        }
     }
 
     private function isOutsideWorkingHours(): bool

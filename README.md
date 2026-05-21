@@ -14,6 +14,8 @@ Telegram Business akkauntiga ulangan shaxsiy AI yordamchi. Mijozlar xabar yozgan
 - **Ish vaqti** — belgilangan soatlardan tashqarida maxsus xabar yuboradi
 - **Debounce** — ketma-ket xabarlarni birlashtiradi, bitta javob beradi
 - **Maxsus buyruqlar** — `/buyruq` → avtomatik javob (mijoz ko'rmaydi)
+- **Chatlar tarixi** — barcha muloqotlarni admin panelda Telegram uslubidagi interfeysda ko'rish (Infinite Scroll bilan)
+- **AI Retry & Error Notify** — AI band bo'lsa (overloaded) avtomatik qayta urinish va xatolik haqida adminga xabar yuborish
 - **Business ulanishlar** — bir nechta Telegram Business ulash va boshqarish
 - **Admin panel** — OTP orqali kirish (parolsiz, Telegram orqali)
 
@@ -168,6 +170,7 @@ URL: `https://yourdomain.com/admin`
 | Bo'lim | Nima qiladi |
 |---|---|
 | **Business Ulanishlar** | Ulangan akkauntlarni ko'rish, yoqish/o'chirish |
+| **Chatlar** | Barcha faol muloqotlar ro'yxati va tarixi (Infinite Scroll) |
 | **Chat Tillari** | Har chat uchun aniqlangan til, siz/sen shakli — ko'rish va qo'lda o'zgartirish |
 | **Buyruqlar** | `/buyruq → javob` qo'shish va o'chirish |
 | **Ish Vaqti** | Soatlarni, timezone va tashqari javobni sozlash |
@@ -278,12 +281,13 @@ config/telegram.php                     # Default sozlamalar + media_replies lis
 
 ### Ma'lumotlar bazasi
 
-| Jadval | Maqsad |
+| Jadval | Maqsadi |
 |---|---|
 | `business_connections` | Ulangan Telegram Business akkauntlar |
 | `bot_settings` | Admin panel sozlamalari (key-value) |
 | `telegram_commands` | Maxsus buyruqlar va javoblar |
 | `chat_languages` | Per-chat til kodi, ism, siz/sen shakli |
+| `chat_messages` | Muloqotlar tarixi (User va AI xabarlari) |
 | `jobs` | Queue worker uchun |
 | `cache` | Debounce lock va Me Mode holati |
 

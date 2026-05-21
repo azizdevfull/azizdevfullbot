@@ -32,7 +32,8 @@ jobs:
             cd /srv/bot
 
             echo "==> Pulling latest code..."
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
 
             echo "==> Installing Composer dependencies..."
             composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader

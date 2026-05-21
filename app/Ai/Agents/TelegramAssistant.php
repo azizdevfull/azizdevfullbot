@@ -18,14 +18,27 @@ class TelegramAssistant implements Agent
 {
     use Promptable;
 
-    public function __construct(public readonly bool $meModeEnabled = false) {}
+    public function __construct(
+        public readonly bool $meModeEnabled = false,
+        public readonly ?string $language = null,
+        public readonly string $addressForm = 'siz',
+    ) {}
 
     public function instructions(): Stringable|string
     {
-        if ($this->meModeEnabled) {
-            return BotSetting::get('me_mode_instructions', config('telegram.me_mode_instructions'));
+        $base = $this->meModeEnabled
+            ? BotSetting::get('me_mode_instructions', config('telegram.me_mode_instructions'))
+            : BotSetting::get('ai_instructions', config('telegram.ai_instructions'));
+
+        $extras = [];
+
+        if ($this->language) {
+            $extras[] = "Har doim faqat {$this->language} tilida javob ber. Boshqa tilda yozma.";
         }
 
-        return BotSetting::get('ai_instructions', config('telegram.ai_instructions'));
+        $form = $this->addressForm === 'sen' ? '"sen" shaklida' : '"siz" shaklida';
+        $extras[] = "Suhbatdoshga {$form} murojaat qil.";
+
+        return $base."\n\nMUHIM:\n- ".implode("\n- ", $extras);
     }
 }

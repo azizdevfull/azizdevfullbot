@@ -23,6 +23,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
         Route::post('settings', [AdminController::class, 'updateSettings'])->name('settings.update');
         Route::post('connections/{connection}/toggle', [AdminController::class, 'toggleConnection'])->name('connections.toggle');
+        Route::post('chats/{chatId}/language', [AdminController::class, 'setChatLanguage'])->name('chats.language.set');
+        Route::post('chats/{chatId}/language/reset', [AdminController::class, 'resetChatLanguage'])->name('chats.language.reset');
+        Route::post('chats/{chatId}/address', [AdminController::class, 'setAddressForm'])->name('chats.address.set');
         Route::post('commands', [AdminController::class, 'storeCommand'])->name('commands.store');
         Route::delete('commands/{telegramCommand}', [AdminController::class, 'destroyCommand'])->name('commands.destroy');
     });

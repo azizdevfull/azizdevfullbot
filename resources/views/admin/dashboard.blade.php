@@ -88,6 +88,89 @@
     </div>
 </div>
 
+{{-- Chat Languages --}}
+<div class="bg-white rounded-2xl border border-slate-200/60 shadow-sm mb-6 overflow-hidden">
+    <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center">
+                <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+            </div>
+            <h2 class="font-semibold text-slate-800">Chat Tillari</h2>
+        </div>
+        <span class="text-xs font-medium text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full">{{ $chatLanguages->count() }}</span>
+    </div>
+    <div class="divide-y divide-slate-100">
+        @forelse ($chatLanguages as $chatId => $lang)
+            <div class="px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-slate-700">{{ $lang->chat_name ?? 'Noma\'lum' }}</p>
+                        <p class="text-xs text-slate-400 font-mono mt-0.5">
+                            chat_id: {{ $lang->chat_id }}
+                            <span class="mx-1 text-slate-300">·</span>
+                            Oxirgi yangilanish: {{ $lang->updated_at->diffForHumans() }}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 flex-wrap">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
+                        {{ $lang->is_manual ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-700' }}">
+                        {{ $lang->is_manual ? '✎ Qo\'lda' : '⟳ Avtomatik' }}
+                        <span class="font-bold">{{ $lang->language_name }}</span>
+                        <code class="opacity-70">[{{ $lang->language_code }}]</code>
+                    </span>
+                    <form method="POST" action="{{ route('admin.chats.language.set', $lang->chat_id) }}" class="flex items-center gap-2">
+                        @csrf
+                        <select name="language_code" class="text-xs rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 transition">
+                            @foreach ([
+                                'uz' => "O'zbek",
+                                'kk' => 'Qazaq',
+                                'ru' => 'Русский',
+                                'en' => 'English',
+                                'tr' => 'Türkçe',
+                                'ar' => 'العربية',
+                            ] as $code => $name)
+                                <option value="{{ $code }}" {{ $lang->language_code === $code ? 'selected' : '' }}>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        <input type="hidden" name="language_name" id="lang_name_{{ $lang->chat_id }}">
+                        <button type="submit" onclick="document.getElementById('lang_name_{{ $lang->chat_id }}').value = this.closest('form').querySelector('select').selectedOptions[0].text"
+                            class="text-xs font-semibold px-3 py-1.5 rounded-xl border border-amber-200 text-amber-600 bg-amber-50 hover:bg-amber-100 transition">
+                            Saqlash
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ route('admin.chats.address.set', $lang->chat_id) }}" class="flex items-center gap-2">
+                        @csrf
+                        <select name="address_form" class="text-xs rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition">
+                            <option value="siz" {{ ($lang->address_form ?? 'siz') === 'siz' ? 'selected' : '' }}>Siz</option>
+                            <option value="sen" {{ ($lang->address_form ?? 'siz') === 'sen' ? 'selected' : '' }}>Sen</option>
+                        </select>
+                        <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-xl border border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition">
+                            Saqlash
+                        </button>
+                    </form>
+                    @if ($lang->is_manual)
+                        <form method="POST" action="{{ route('admin.chats.language.reset', $lang->chat_id) }}">
+                            @csrf
+                            <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 text-slate-500 bg-slate-50 hover:bg-slate-100 transition">
+                                Avtoga qaytarish
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        @empty
+            <div class="px-6 py-10 text-center">
+                <div class="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+                </div>
+                <p class="text-sm text-slate-400">Hali hech qanday chat tili aniqlanmagan</p>
+                <p class="text-xs text-slate-300 mt-1">Birinchi xabar kelgandan so'ng avtomatik aniqlanadi</p>
+            </div>
+        @endforelse
+    </div>
+</div>
+
 {{-- Commands --}}
 <div class="bg-white rounded-2xl border border-slate-200/60 shadow-sm mb-6 overflow-hidden">
     <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between">

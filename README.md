@@ -8,6 +8,9 @@ Telegram Business akkauntiga ulangan shaxsiy AI yordamchi. Mijozlar xabar yozgan
 
 - **AI avtomatik javob** — Gemini AI orqali mijoz xabarlariga professional javob
 - **Me Mode** — AI o'zingiz bo'lib yozadi (birinchi shaxsda)
+- **Til aniqlash** — har chat uchun til avtomatik aniqlanadi va saqlanadi (o'zbek, qozoq, rus va boshqalar)
+- **Siz/Sen** — har chat uchun murojat shakli alohida sozlanadi
+- **Media xabarlar** — ovoz, video, rasm kelganda AI ishlatmay, tabiiy random javob yuboradi (3s kechikish bilan)
 - **Ish vaqti** — belgilangan soatlardan tashqarida maxsus xabar yuboradi
 - **Debounce** — ketma-ket xabarlarni birlashtiradi, bitta javob beradi
 - **Maxsus buyruqlar** — `/buyruq` → avtomatik javob (mijoz ko'rmaydi)
@@ -147,6 +150,7 @@ URL: `https://yourdomain.com/admin`
 | Bo'lim | Nima qiladi |
 |---|---|
 | **Business Ulanishlar** | Ulangan akkauntlarni ko'rish, yoqish/o'chirish |
+| **Chat Tillari** | Har chat uchun aniqlangan til, siz/sen shakli — ko'rish va qo'lda o'zgartirish |
 | **Buyruqlar** | `/buyruq → javob` qo'shish va o'chirish |
 | **Ish Vaqti** | Soatlarni, timezone va tashqari javobni sozlash |
 | **AI Sozlamalari** | AI yoqish/o'chirish, fallback javob, debounce |
@@ -167,6 +171,17 @@ Bu buyruqlar faqat **siz** (akkaunt egasi) tomonidan yoziladi. Bot xabarni o'chi
 | `/memode` | Me Mode ni yoqadi/o'chiradi (shu chat uchun) |
 
 > Admin paneldan yangi buyruqlar qo'shishingiz mumkin.
+
+### Til va murojat boshqaruvi
+
+Botga to'g'ridan (shaxsiy xabarda) yuboriladi:
+
+| Buyruq | Nima qiladi |
+|---|---|
+| `/langlist` | Barcha chatlar va ularning tillari |
+| `/langset {chat_id} kk` | Chat tili qo'lda belgilash (`uz`, `kk`, `ru`, `en`, `tr`, `ar`) |
+| `/langreset {chat_id}` | Tilni avtomatik aniqlanishga qaytarish |
+| `/address {chat_id} siz\|sen` | Murojat shaklini o'zgartirish |
 
 ### Me Mode
 
@@ -223,17 +238,24 @@ Telegram → POST /telegram/webhook
 
 ```
 app/
-├── Ai/Agents/TelegramAssistant.php     # AI agent (Gemini)
+├── Ai/Agents/
+│   ├── TelegramAssistant.php           # AI agent (Gemini) — til va siz/sen bilan
+│   └── LanguageDetectionAgent.php      # Til aniqlash agenti
 ├── Http/Controllers/
 │   ├── TelegramWebhookController.php   # Webhook handler
 │   └── AdminController.php             # Admin panel
-├── Jobs/ProcessBusinessMessagesJob.php # AI javob (queue)
+├── Jobs/
+│   ├── ProcessBusinessMessagesJob.php  # AI javob (queue)
+│   └── SendBusinessMessageJob.php      # Media reply — delayed (queue)
+├── Services/
+│   └── LanguageDetector.php            # Til aniqlash servisi
 └── Models/
     ├── BotSetting.php                  # key-value sozlamalar
     ├── BusinessConnection.php          # Telegram Business ulanishlar
+    ├── ChatLanguage.php                # Per-chat til va siz/sen
     └── TelegramCommand.php             # Maxsus buyruqlar
 
-config/telegram.php                     # Default sozlamalar
+config/telegram.php                     # Default sozlamalar + media_replies listlari
 ```
 
 ### Ma'lumotlar bazasi
@@ -243,6 +265,7 @@ config/telegram.php                     # Default sozlamalar
 | `business_connections` | Ulangan Telegram Business akkauntlar |
 | `bot_settings` | Admin panel sozlamalari (key-value) |
 | `telegram_commands` | Maxsus buyruqlar va javoblar |
+| `chat_languages` | Per-chat til kodi, ism, siz/sen shakli |
 | `jobs` | Queue worker uchun |
 | `cache` | Debounce lock va Me Mode holati |
 

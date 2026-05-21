@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BotSetting;
 use App\Models\BusinessConnection;
 use App\Models\ChatLanguage;
+use App\Models\ChatMessage;
 use App\Models\TelegramCommand;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -89,6 +90,46 @@ class AdminController extends Controller
                 'working_hours_timezone' => BotSetting::get('working_hours_timezone', 'Asia/Tashkent'),
                 'working_hours_message' => BotSetting::get('working_hours_message', 'Ish vaqtimiz 09:00–18:00. Tez orada javob beraman! ✅'),
             ],
+        ]);
+    }
+
+    public function chats(): View
+    {
+        $chats = ChatMessage::query()
+            ->select('chat_id')
+            ->selectRaw('MAX(created_at) as last_message_at')
+            ->groupBy('chat_id')
+            ->orderByDesc('last_message_at')
+            ->paginate(15);
+
+        $chatIds = $chats->pluck('chat_id');
+        $languages = ChatLanguage::whereIn('chat_id', $chatIds)->get()->keyBy('chat_id');
+        $lastMessages = ChatMessage::whereIn('id', function ($query) use ($chatIds) {
+            $query->selectRaw('MAX(id)')
+                ->from('chat_messages')
+                ->whereIn('chat_id', $chatIds)
+                ->groupBy('chat_id');
+        })->get()->keyBy('chat_id');
+
+        return view('admin.chats.index', [
+            'chats' => $chats,
+            'languages' => $languages,
+            'lastMessages' => $lastMessages,
+        ]);
+    }
+
+    public function chatDetail(int $chatId): View
+    {
+        $messages = ChatMessage::where('chat_id', $chatId)
+            ->orderBy('id')
+            ->get();
+
+        $language = ChatLanguage::where('chat_id', $chatId)->first();
+
+        return view('admin.chats.show', [
+            'chatId' => $chatId,
+            'messages' => $messages,
+            'language' => $language,
         ]);
     }
 

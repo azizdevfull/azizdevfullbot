@@ -5,7 +5,9 @@ use App\Http\Controllers\TelegramWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return response()->json(
+        ['message' => 'Hello world!']
+    );
 });
 
 Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])

@@ -120,7 +120,7 @@ Bu bir vaqtda ishga tushiradi:
 - `php artisan pail` — log viewer
 - `npm run dev` — Vite HMR
 
-### Production
+### Production (manual)
 
 ```bash
 npm run build
@@ -130,6 +130,24 @@ php artisan route:cache
 # Queue worker (supervisor yoki systemd bilan)
 php artisan queue:work --tries=3
 ```
+
+### Production (avtomatik — CI/CD)
+
+`main` branchga har push bo'lganda GitHub Actions avtomatik deploy qiladi:
+
+1. Testlar va Pint lint o'tadi
+2. VPS ga SSH orqali ulanadi
+3. `git pull` → `composer install` → `npm run build`
+4. `php artisan migrate --force` + cache
+5. Queue workers restart
+
+**Kerakli GitHub Secrets** (Settings → Secrets → Actions):
+
+| Secret | Qiymat |
+|---|---|
+| `SSH_HOST` | VPS IP |
+| `SSH_USER` | SSH user (`root`) |
+| `SSH_PASSWORD` | SSH paroli |
 
 ---
 

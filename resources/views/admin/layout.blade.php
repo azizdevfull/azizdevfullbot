@@ -23,9 +23,14 @@
                 <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-base shadow-lg shadow-indigo-200">
                     🤖
                 </div>
-                <div>
-                    <span class="font-bold text-slate-800 text-sm tracking-tight">Bot Admin</span>
-                    <span class="ml-2 text-xs text-slate-400 hidden sm:inline">@azizdevfullbot</span>
+                <div class="flex items-center gap-6 ml-2">
+                    <a href="{{ route('admin.dashboard') }}" class="group">
+                        <span class="font-bold text-slate-800 text-sm tracking-tight group-hover:text-indigo-600 transition">Bot Admin</span>
+                    </a>
+                    <nav class="hidden md:flex items-center gap-4">
+                        <a href="{{ route('admin.dashboard') }}" class="text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800' }} transition">Sozlamalar</a>
+                        <a href="{{ route('admin.chats.index') }}" class="text-sm font-medium {{ request()->routeIs('admin.chats.*') ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800' }} transition">Chatlar</a>
+                    </nav>
                 </div>
             </div>
             <form method="POST" action="{{ route('admin.logout') }}">

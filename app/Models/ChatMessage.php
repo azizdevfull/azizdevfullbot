@@ -26,13 +26,15 @@ class ChatMessage extends Model
 
     public static function cleanupOld(int|string $chatId, int $keep = 30): void
     {
-        $ids = static::where('chat_id', $chatId)
+        $keepIds = static::where('chat_id', $chatId)
             ->orderByDesc('id')
-            ->skip($keep)
+            ->limit($keep)
             ->pluck('id');
 
-        if ($ids->isNotEmpty()) {
-            static::whereIn('id', $ids)->delete();
+        if ($keepIds->isNotEmpty()) {
+            static::where('chat_id', $chatId)
+                ->whereNotIn('id', $keepIds)
+                ->delete();
         }
     }
 }

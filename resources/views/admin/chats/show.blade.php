@@ -4,27 +4,104 @@
 
 @section('content')
 
-{{-- Page header --}}
-<div class="mb-6 flex items-center justify-between gap-4">
-    <div class="flex items-center gap-4">
-        <a href="{{ route('admin.chats.index') }}" class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:border-slate-300 transition shadow-sm">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-        </a>
-        <div>
-            <h1 class="text-xl font-bold text-slate-800 tracking-tight">{{ $language->chat_name ?? 'Noma\'lum chat' }}</h1>
-            <p class="text-xs text-slate-400 font-mono mt-0.5">{{ $chatId }}</p>
+<div class="mb-6" x-data="{ showSettings: false }">
+    <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <a href="{{ route('admin.chats.index') }}" class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:border-slate-300 transition shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-xl font-bold text-slate-800 tracking-tight">{{ $language->chat_name ?? 'Noma\'lum chat' }}</h1>
+                <p class="text-xs text-slate-400 font-mono mt-0.5">{{ $chatId }}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            @if ($language)
+                <div class="hidden sm:flex items-center gap-2">
+                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $language->is_manual ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-700' }}">
+                        {{ $language->language_name }}
+                    </span>
+                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700">
+                        {{ $language->address_form ?? 'siz' }}
+                    </span>
+                </div>
+            @endif
+            <button @click="showSettings = !showSettings" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition shadow-sm">
+                <svg class="w-4 h-4" :class="{ 'rotate-180': showSettings }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Sozlamalar
+            </button>
         </div>
     </div>
-    @if ($language)
-        <div class="flex items-center gap-2">
-            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider {{ $language->is_manual ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-700' }}">
-                {{ $language->language_name }}
-            </span>
-            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700">
-                {{ $language->address_form ?? 'siz' }}
-            </span>
+
+    {{-- Chat settings panel --}}
+    <div x-show="showSettings" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         class="mt-4 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm overflow-hidden">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {{-- Language settings --}}
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Chat tili</label>
+                <div class="flex items-center gap-2">
+                    <form method="POST" action="{{ route('admin.chats.language.set', $chatId) }}" class="flex-1 flex items-center gap-3">
+                        @csrf
+                        <select name="language_code" class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400 transition">
+                            @foreach ([
+                                'uz' => "O'zbek",
+                                'kk' => 'Qazaq',
+                                'ru' => 'Русский',
+                                'en' => 'English',
+                                'tr' => 'Türkçe',
+                                'ar' => 'العربية',
+                            ] as $code => $name)
+                                <option value="{{ $code }}" {{ ($language->language_code ?? '') === $code ? 'selected' : '' }}>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        <input type="hidden" name="language_name">
+                        <button type="submit" @click="$el.previousElementSibling.value = $el.previousElementSibling.previousElementSibling.selectedOptions[0].text"
+                            class="px-4 py-2 rounded-xl bg-teal-50 text-teal-600 border border-teal-200 text-xs font-bold hover:bg-teal-100 transition whitespace-nowrap">
+                            Saqlash
+                        </button>
+                    </form>
+                    @if ($language?->is_manual)
+                        <form method="POST" action="{{ route('admin.chats.language.reset', $chatId) }}">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 rounded-xl bg-slate-50 text-slate-500 border border-slate-200 text-xs font-bold hover:bg-slate-100 transition whitespace-nowrap">
+                                Avto
+                            </button>
+                        </form>
+                    @endif
+                </div>
+                <p class="mt-2 text-[10px] text-slate-400">Bot foydalanuvchiga aynan shu tilda javob beradi.</p>
+            </div>
+
+            {{-- Address form settings --}}
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Murojaat shakli</label>
+                <form method="POST" action="{{ route('admin.chats.address.set', $chatId) }}" class="flex items-center gap-3" x-data="{ addressForm: '{{ $language->address_form ?? 'siz' }}' }">
+                    @csrf
+                    <div class="flex-1 grid grid-cols-2 gap-2 p-1 bg-slate-50 rounded-xl border border-slate-200">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="address_form" value="siz" class="sr-only" x-model="addressForm">
+                            <div class="py-1.5 text-center text-xs font-bold rounded-lg transition" 
+                                 :class="addressForm === 'siz' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'">Siz</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="address_form" value="sen" class="sr-only" x-model="addressForm">
+                            <div class="py-1.5 text-center text-xs font-bold rounded-lg transition" 
+                                 :class="addressForm === 'sen' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'">Sen</div>
+                        </label>
+                    </div>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200 text-xs font-bold hover:bg-indigo-100 transition whitespace-nowrap">
+                        Saqlash
+                    </button>
+                </form>
+                <p class="mt-2 text-[10px] text-slate-400">AI javob berishda "Siz" yoki "Sen" shaklidan foydalanadi.</p>
+            </div>
         </div>
-    @endif
+    </div>
 </div>
 
 {{-- Chat container --}}

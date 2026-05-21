@@ -1,23 +1,19 @@
-# AzizDevFull — Telegram AI Business Bot
+# AzizDevFull — Telegram AI Personal Assistant (Digital Twin)
 
-Telegram Business akkauntiga ulangan shaxsiy AI yordamchi. Mijozlar xabar yozganda avtomatik javob beradi. Admin panel orqali boshqariladi.
+Shaxsiy Telegram akkauntingiz uchun "Raqamli Egizak" (Digital Twin). Siz band bo'lganingizda yoki vaqtingiz bo'lmaganda, AI sizning nomingizdan muloqot qiladi. Asosiy maqsad — suhbatdoshga AI yozayotganini bildirmasdan, sizning uslubingizda suhbatni davom ettirish.
 
 ---
 
 ## Imkoniyatlar
 
-- **AI avtomatik javob** — Gemini AI orqali mijoz xabarlariga professional javob
-- **Me Mode** — AI o'zingiz bo'lib yozadi (birinchi shaxsda)
-- **Til aniqlash** — har chat uchun til avtomatik aniqlanadi va saqlanadi (o'zbek, qozoq, rus va boshqalar)
-- **Siz/Sen** — har chat uchun murojat shakli alohida sozlanadi
-- **Media xabarlar** — ovoz, video, rasm kelganda AI ishlatmay, tabiiy random javob yuboradi (3s kechikish bilan)
-- **Ish vaqti** — belgilangan soatlardan tashqarida maxsus xabar yuboradi
-- **Debounce** — ketma-ket xabarlarni birlashtiradi, bitta javob beradi
-- **Maxsus buyruqlar** — `/buyruq` → avtomatik javob (mijoz ko'rmaydi)
-- **Chatlar tarixi** — barcha muloqotlarni admin panelda Telegram uslubidagi interfeysda ko'rish (Infinite Scroll bilan)
-- **AI Retry & Error Notify** — AI band bo'lsa (overloaded) avtomatik qayta urinish va xatolik haqida adminga xabar yuborish
-- **Business ulanishlar** — bir nechta Telegram Business ulash va boshqarish
-- **Admin panel** — OTP orqali kirish (parolsiz, Telegram orqali)
+- **Me Mode (Digital Twin)** — AI sizning shaxsingizga kiradi. "Men..." deb birinchi shaxsda gapiradi, sizning xarakteringiz va suhbat uslubingizni (slang, emoji, ohang) takrorlaydi.
+- **Incognito Muloqot** — Suhbatdosh siz yo'qligingizni yoki bot ishlayotganini sezmasligi uchun maxsus kechikishlar (typing status) va tabiiy javoblar algoritmi.
+- **AI avtomatik javob** — Gemini AI orqali har qanday mavzuda (shaxsiy, ish, oilaviy) professional yoki norasmiy javoblar.
+- **Til aniqlash** — Har bir chat uchun til avtomatik aniqlanadi (o'zbek, rus, ingliz va h.k.).
+- **Siz/Sen boshqaruvi** — Yaqin insonlar bilan "sen", boshqalar bilan "siz" orqali muloqot qilish sozlamasi.
+- **Media xabarlar bilan ishlash** — Ovozli xabar yoki rasm kelganda shubha uyg'otmaslik uchun "Hozir ko'ra olmayman, birozdan keyin yozaman" kabi tabiiy random javoblar.
+- **Debounce & Context** — Ketma-ket kelgan xabarlarni bitta mazmunga birlashtirib, mantiqiy javob qaytarish.
+- **Admin Panel** — Chatlar tarixini kuzatish va kerak bo'lganda muloqotga o'zingiz aralashishingiz uchun qulay interfeys.
 
 ---
 

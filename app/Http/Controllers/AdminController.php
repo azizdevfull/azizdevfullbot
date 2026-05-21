@@ -75,9 +75,32 @@ class AdminController extends Controller
     public function dashboard(): View
     {
         return view('admin.dashboard', [
+            'connectionsCount' => BusinessConnection::count(),
+            'chatsCount' => ChatLanguage::count(),
+            'commandsCount' => TelegramCommand::count(),
+            'aiEnabled' => BotSetting::get('ai_enabled', '1') === '1',
+            'workingHoursEnabled' => BotSetting::get('working_hours_enabled', '0') === '1',
+        ]);
+    }
+
+    public function connections(): View
+    {
+        return view('admin.connections.index', [
             'connections' => BusinessConnection::all(),
-            'chatLanguages' => ChatLanguage::all()->keyBy('chat_id'),
+        ]);
+    }
+
+    public function commands(): View
+    {
+        return view('admin.commands.index', [
             'commands' => TelegramCommand::orderBy('command')->get(),
+        ]);
+    }
+
+    public function settings(): View
+    {
+        return view('admin.settings.index', [
+            'chatLanguages' => ChatLanguage::all()->keyBy('chat_id'),
             'settings' => [
                 'ai_enabled' => BotSetting::get('ai_enabled', '1'),
                 'ai_instructions' => BotSetting::get('ai_instructions', config('telegram.ai_instructions')),

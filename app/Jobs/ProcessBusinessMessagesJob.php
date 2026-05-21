@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Ai\Agents\TelegramAssistant;
 use App\Models\BotSetting;
+use App\Models\ChatMessage;
 use App\Services\LanguageDetector;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -52,6 +53,16 @@ class ProcessBusinessMessagesJob implements ShouldQueue
 
         $chatLang = LanguageDetector::detectAndSave($this->chatId, $combined, $this->chatName);
 
+        $history = ChatMessage::getHistory($this->chatId, 20)
+            ->map(fn ($m) => ['role' => $m->role, 'content' => $m->content])
+            ->all();
+
+        ChatMessage::create([
+            'chat_id' => $this->chatId,
+            'role' => 'user',
+            'content' => $combined,
+        ]);
+
         try {
             $meModeActive = Cache::get("memode_{$this->chatId}", false)
                 || BotSetting::get('me_mode_global', '0') === '1';
@@ -60,10 +71,19 @@ class ProcessBusinessMessagesJob implements ShouldQueue
                 meModeEnabled: $meModeActive,
                 language: $chatLang->language_name,
                 addressForm: $chatLang->address_form ?? 'siz',
+                conversationHistory: $history,
             );
 
             $response = $assistant->prompt($combined);
             $replyText = $response->text;
+
+            ChatMessage::create([
+                'chat_id' => $this->chatId,
+                'role' => 'assistant',
+                'content' => $replyText,
+            ]);
+
+            ChatMessage::cleanupOld($this->chatId, 30);
         } catch (\Throwable $e) {
             Log::channel('telegram')->error('AI reply failed', ['error' => $e->getMessage()]);
             $replyText = BotSetting::get('fallback_reply', config('telegram.fallback_reply', 'Xabaringiz qabul qilindi. Tez orada javob beraman! ✅'));

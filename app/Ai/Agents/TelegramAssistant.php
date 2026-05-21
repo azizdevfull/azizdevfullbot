@@ -7,14 +7,16 @@ use Laravel\Ai\Attributes\Model;
 use Laravel\Ai\Attributes\Provider;
 use Laravel\Ai\Attributes\Temperature;
 use Laravel\Ai\Contracts\Agent;
+use Laravel\Ai\Contracts\Conversational;
 use Laravel\Ai\Enums\Lab;
+use Laravel\Ai\Messages\Message;
 use Laravel\Ai\Promptable;
 use Stringable;
 
 #[Provider(Lab::Gemini)]
 #[Model('gemini-flash-lite-latest')]
 #[Temperature(0.7)]
-class TelegramAssistant implements Agent
+class TelegramAssistant implements Agent, Conversational
 {
     use Promptable;
 
@@ -22,6 +24,7 @@ class TelegramAssistant implements Agent
         public readonly bool $meModeEnabled = false,
         public readonly ?string $language = null,
         public readonly string $addressForm = 'siz',
+        public readonly array $conversationHistory = [],
     ) {}
 
     public function instructions(): Stringable|string
@@ -40,5 +43,13 @@ class TelegramAssistant implements Agent
         $extras[] = "Suhbatdoshga {$form} murojaat qil.";
 
         return $base."\n\nMUHIM:\n- ".implode("\n- ", $extras);
+    }
+
+    public function messages(): iterable
+    {
+        return array_map(
+            fn ($m) => new Message($m['role'], $m['content']),
+            $this->conversationHistory
+        );
     }
 }

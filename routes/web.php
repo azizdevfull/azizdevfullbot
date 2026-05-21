@@ -25,6 +25,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
         Route::get('chats', [AdminController::class, 'chats'])->name('chats.index');
         Route::get('chats/{chatId}', [AdminController::class, 'chatDetail'])->name('chats.show');
+        Route::get('chats/{chatId}/messages', [AdminController::class, 'chatMessages'])->name('chats.messages');
         Route::post('settings', [AdminController::class, 'updateSettings'])->name('settings.update');
         Route::post('connections/{connection}/toggle', [AdminController::class, 'toggleConnection'])->name('connections.toggle');
         Route::post('chats/{chatId}/language', [AdminController::class, 'setChatLanguage'])->name('chats.language.set');

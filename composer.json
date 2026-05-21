@@ -12,6 +12,7 @@
         "php": "^8.3",
         "laravel/ai": "^0.6.8",
         "laravel/framework": "^13.8",
+        "laravel/telescope": "^5.20",
         "laravel/tinker": "^3.0"
     },
     "require-dev": {

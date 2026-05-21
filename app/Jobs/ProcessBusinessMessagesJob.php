@@ -17,6 +17,12 @@ class ProcessBusinessMessagesJob implements ShouldQueue
 {
     use Queueable;
 
+    public $tries = 10;
+
+    public $messages = null;
+
+    public $userMessageCreated = false;
+
     public function __construct(
         public readonly int|string $chatId,
         public readonly string $connectionId,
@@ -26,9 +32,11 @@ class ProcessBusinessMessagesJob implements ShouldQueue
 
     public function handle(): void
     {
-        $messages = Cache::pull($this->cacheKey);
+        if ($this->messages === null) {
+            $this->messages = Cache::pull($this->cacheKey);
+        }
 
-        if (empty($messages)) {
+        if (empty($this->messages)) {
             return;
         }
 
@@ -47,9 +55,9 @@ class ProcessBusinessMessagesJob implements ShouldQueue
 
         $this->sendTyping($token);
 
-        $combined = count($messages) === 1
-            ? $messages[0]
-            : 'Foydalanuvchi ketma-ket bir nechta xabar yubordi: "'.implode('" va "', $messages).'". Barchasiga bitta tabiiy javob ber.';
+        $combined = count($this->messages) === 1
+            ? $this->messages[0]
+            : 'Foydalanuvchi ketma-ket bir nechta xabar yubordi: "'.implode('" va "', $this->messages).'". Barchasiga bitta tabiiy javob ber.';
 
         $chatLang = LanguageDetector::detectAndSave($this->chatId, $combined, $this->chatName);
 
@@ -57,11 +65,14 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             ->map(fn ($m) => ['role' => $m->role, 'content' => $m->content])
             ->all();
 
-        ChatMessage::create([
-            'chat_id' => $this->chatId,
-            'role' => 'user',
-            'content' => $combined,
-        ]);
+        if (! $this->userMessageCreated) {
+            ChatMessage::create([
+                'chat_id' => $this->chatId,
+                'role' => 'user',
+                'content' => $combined,
+            ]);
+            $this->userMessageCreated = true;
+        }
 
         try {
             $meModeActive = Cache::get("memode_{$this->chatId}", false)
@@ -84,12 +95,32 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             ]);
 
             ChatMessage::cleanupOld($this->chatId, 30);
+
+            $this->sendMessage($token, $replyText);
         } catch (\Throwable $e) {
             Log::channel('telegram')->error('AI reply failed', ['error' => $e->getMessage()]);
-            $replyText = BotSetting::get('fallback_reply', config('telegram.fallback_reply', 'Xabaringiz qabul qilindi. Tez orada javob beraman! ✅'));
-        }
 
-        $this->sendMessage($token, $replyText);
+            // If Gemini is overloaded, retry after 30 seconds
+            if (str_contains($e->getMessage(), 'overloaded') && $this->attempts() < $this->tries) {
+                $this->release(30);
+
+                return;
+            }
+
+            $adminChatId = config('admin.telegram_chat_id');
+            if ($adminChatId) {
+                $errorMsg = "⚠️ <b>AI Xatolik:</b>\n\n";
+                $errorMsg .= "Chat: <code>{$this->chatId}</code> ({$this->chatName})\n";
+                $errorMsg .= "Xato: <code>{$e->getMessage()}</code>\n";
+                $errorMsg .= "Urinishlar: {$this->attempts()} / {$this->tries}";
+
+                Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+                    'chat_id' => $adminChatId,
+                    'text' => $errorMsg,
+                    'parse_mode' => 'HTML',
+                ]);
+            }
+        }
     }
 
     private function isOutsideWorkingHours(): bool

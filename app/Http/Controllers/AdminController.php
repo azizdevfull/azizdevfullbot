@@ -121,8 +121,10 @@ class AdminController extends Controller
     public function chatDetail(int $chatId): View
     {
         $messages = ChatMessage::where('chat_id', $chatId)
-            ->orderBy('id')
-            ->get();
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get()
+            ->reverse();
 
         $language = ChatLanguage::where('chat_id', $chatId)->first();
 
@@ -130,6 +132,26 @@ class AdminController extends Controller
             'chatId' => $chatId,
             'messages' => $messages,
             'language' => $language,
+        ]);
+    }
+
+    public function chatMessages(Request $request, int $chatId)
+    {
+        $beforeId = $request->query('before_id');
+
+        $query = ChatMessage::where('chat_id', $chatId);
+
+        if ($beforeId) {
+            $query->where('id', '<', $beforeId);
+        }
+
+        $messages = $query->orderByDesc('id')
+            ->limit(50)
+            ->get();
+
+        return response()->json([
+            'messages' => $messages->reverse()->values(),
+            'has_more' => $messages->count() === 50,
         ]);
     }
 

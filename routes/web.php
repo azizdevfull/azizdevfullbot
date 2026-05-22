@@ -44,6 +44,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('personas', [AdminController::class, 'personas'])->name('personas.index');
         Route::post('personas', [AdminController::class, 'storePersona'])->name('personas.store');
+        Route::put('personas/{persona}', [AdminController::class, 'updatePersona'])->name('personas.update');
         Route::delete('personas/{persona}', [AdminController::class, 'destroyPersona'])->name('personas.destroy');
+
+        Route::post('chats/{chatId}/clear', [AdminController::class, 'clearChatMessages'])->name('chats.clear');
+        Route::delete('messages/{message}', [AdminController::class, 'destroyChatMessage'])->name('messages.destroy');
     });
 });

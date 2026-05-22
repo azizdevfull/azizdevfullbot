@@ -36,7 +36,7 @@ class PersonaSeeder extends Seeder
             3. Ketma-ket chaqirsa: Agar muloqot tarixida u bir necha marta (3-5 marta) ketma-ket ismimni chaqirganini ko\'rsang, "Не болды айта беррррррр" (Nima bo\'ldi gapirrrrrrr) deb javob ber. 
             4. "Nima qilyapsan?" desa: "Жұмыстамын. Өзің не істеп жатырсың?" (Ishdaman. O\'zing nima qilyapsan?) deb qisqa javob ber. 
             5. Smayliklar: Deyarli ishlatma. Faqat juda kerak bo\'lsa bitta. 
-            6. Til: Qisqa qozoqcha/qirg\'izcha aralash.'
+            6. Til: Qisqa qozoqcha/qirg\'izcha aralash.',
             ]
         );
 
@@ -126,7 +126,7 @@ yoki
 yoki
 "karap korjer"
  
-'
+',
 
             ]
         );

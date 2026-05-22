@@ -6,6 +6,7 @@ use App\Models\BotSetting;
 use App\Models\BusinessConnection;
 use App\Models\ChatLanguage;
 use App\Models\ChatMessage;
+use App\Models\Persona;
 use App\Models\TelegramCommand;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -126,7 +127,7 @@ class AdminController extends Controller
             ->paginate(15);
 
         $chatIds = $chats->pluck('chat_id');
-        $languages = ChatLanguage::whereIn('chat_id', $chatIds)->get()->keyBy('chat_id');
+        $languages = ChatLanguage::with('persona')->whereIn('chat_id', $chatIds)->get()->keyBy('chat_id');
         $lastMessages = ChatMessage::whereIn('id', function ($query) use ($chatIds) {
             $query->selectRaw('MAX(id)')
                 ->from('chat_messages')
@@ -138,6 +139,7 @@ class AdminController extends Controller
             'chats' => $chats,
             'languages' => $languages,
             'lastMessages' => $lastMessages,
+            'personas' => Persona::all(),
         ]);
     }
 
@@ -149,12 +151,13 @@ class AdminController extends Controller
             ->get()
             ->reverse();
 
-        $language = ChatLanguage::where('chat_id', $chatId)->first();
+        $language = ChatLanguage::with('persona')->where('chat_id', $chatId)->first();
 
         return view('admin.chats.show', [
             'chatId' => $chatId,
             'messages' => $messages,
             'language' => $language,
+            'personas' => Persona::all(),
         ]);
     }
 
@@ -272,5 +275,42 @@ class AdminController extends Controller
         ChatLanguage::where('chat_id', $chatId)->update(['address_form' => $data['address_form']]);
 
         return back()->with('success', 'Murojat shakli saqlandi.');
+    }
+
+    public function personas(): View
+    {
+        return view('admin.personas.index', [
+            'personas' => Persona::orderBy('name')->get(),
+        ]);
+    }
+
+    public function storePersona(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'prompt_instruction' => 'required|string',
+        ]);
+
+        Persona::create($data);
+
+        return back()->with('success', 'Persona saqlandi.');
+    }
+
+    public function destroyPersona(Persona $persona): RedirectResponse
+    {
+        $persona->delete();
+
+        return back()->with('success', 'Persona o\'chirildi.');
+    }
+
+    public function setChatPersona(Request $request, int $chatId): RedirectResponse
+    {
+        $data = $request->validate([
+            'persona_id' => 'nullable|exists:personas,id',
+        ]);
+
+        ChatLanguage::where('chat_id', $chatId)->update(['persona_id' => $data['persona_id']]);
+
+        return back()->with('success', 'Chat personasi saqlandi.');
     }
 }

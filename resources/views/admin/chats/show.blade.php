@@ -40,7 +40,7 @@
          x-transition:enter-end="opacity-100 translate-y-0"
          class="mt-4 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm overflow-hidden">
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             {{-- Language settings --}}
             <div>
                 <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Chat tili</label>
@@ -99,6 +99,24 @@
                     </button>
                 </form>
                 <p class="mt-2 text-[10px] text-slate-400">AI javob berishda "Siz" yoki "Sen" shaklidan foydalanadi.</p>
+            </div>
+
+            {{-- Persona settings --}}
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Persona (Xarakter)</label>
+                <form method="POST" action="{{ route('admin.chats.persona.set', $chatId) }}" class="flex items-center gap-3">
+                    @csrf
+                    <select name="persona_id" class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 transition">
+                        <option value="">Default (Oddiy)</option>
+                        @foreach ($personas as $persona)
+                            <option value="{{ $persona->id }}" {{ ($language->persona_id ?? '') == $persona->id ? 'selected' : '' }}>{{ $persona->name }}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-purple-50 text-purple-600 border border-purple-200 text-xs font-bold hover:bg-purple-100 transition whitespace-nowrap">
+                        Saqlash
+                    </button>
+                </form>
+                <p class="mt-2 text-[10px] text-slate-400">Suhbatdoshga xos muloqot uslubini belgilash.</p>
             </div>
         </div>
     </div>

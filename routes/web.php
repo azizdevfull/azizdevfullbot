@@ -40,5 +40,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('chats/{chatId}/language', [AdminController::class, 'setChatLanguage'])->name('chats.language.set');
         Route::post('chats/{chatId}/language/reset', [AdminController::class, 'resetChatLanguage'])->name('chats.language.reset');
         Route::post('chats/{chatId}/address', [AdminController::class, 'setAddressForm'])->name('chats.address.set');
+        Route::post('chats/{chatId}/persona', [AdminController::class, 'setChatPersona'])->name('chats.persona.set');
+
+        Route::get('personas', [AdminController::class, 'personas'])->name('personas.index');
+        Route::post('personas', [AdminController::class, 'storePersona'])->name('personas.store');
+        Route::delete('personas/{persona}', [AdminController::class, 'destroyPersona'])->name('personas.destroy');
     });
 });

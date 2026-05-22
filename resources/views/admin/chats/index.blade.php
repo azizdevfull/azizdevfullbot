@@ -29,6 +29,11 @@
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider {{ $lang->is_manual ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-700' }}">
                                         {{ $lang->language_code }}
                                     </span>
+                                    @if ($lang->persona)
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700">
+                                            {{ $lang->persona->name }}
+                                        </span>
+                                    @endif
                                 @endif
                             </div>
                             <p class="text-sm text-slate-500 truncate mt-0.5">

@@ -16,19 +16,46 @@
     </div>
     <div class="divide-y divide-slate-100">
         @forelse ($personas as $persona)
-            <div class="px-6 py-4 flex flex-col gap-2">
+            <div class="px-6 py-4 flex flex-col gap-2" x-data="{ editing: false, name: '{{ $persona->name }}', prompt: '{{ addslashes($persona->prompt_instruction) }}' }">
                 <div class="flex items-center justify-between gap-4">
-                    <h3 class="font-bold text-slate-800">{{ $persona->name }}</h3>
-                    <form method="POST" action="{{ route('admin.personas.destroy', $persona) }}" onsubmit="return confirm('O\'chirishni tasdiqlaysizmi?')" class="shrink-0">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="text-xs font-semibold text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 px-3 py-1.5 rounded-xl transition">
-                            O'chirish
+                    <template x-if="!editing">
+                        <h3 class="font-bold text-slate-800">{{ $persona->name }}</h3>
+                    </template>
+                    <template x-if="editing">
+                        <input type="text" x-model="name" class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition">
+                    </template>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="editing = !editing" x-text="editing ? 'Bekor qilish' : 'Tahrirlash'"
+                            class="text-xs font-semibold text-indigo-400 hover:text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-3 py-1.5 rounded-xl transition">
                         </button>
-                    </form>
+                        
+                        <form x-show="!editing" method="POST" action="{{ route('admin.personas.destroy', $persona) }}" onsubmit="return confirm('O\'chirishni tasdiqlaysizmi?')" class="shrink-0">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-xs font-semibold text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 px-3 py-1.5 rounded-xl transition">
+                                O'chirish
+                            </button>
+                        </form>
+
+                        <form x-show="editing" method="POST" action="{{ route('admin.personas.update', $persona) }}" class="inline">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="name" :value="name">
+                            <input type="hidden" name="prompt_instruction" :value="prompt">
+                            <button type="submit" class="text-xs font-semibold text-emerald-500 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 px-3 py-1.5 rounded-xl transition">
+                                Saqlash
+                            </button>
+                        </form>
+                    </div>
                 </div>
                 <div class="bg-slate-50 border border-slate-100 rounded-xl p-3">
-                    <p class="text-sm text-slate-600 leading-relaxed">{{ $persona->prompt_instruction }}</p>
+                    <template x-if="!editing">
+                        <p class="text-sm text-slate-600 leading-relaxed">{{ $persona->prompt_instruction }}</p>
+                    </template>
+                    <template x-if="editing">
+                        <textarea x-model="prompt" rows="3" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"></textarea>
+                    </template>
                 </div>
             </div>
         @empty

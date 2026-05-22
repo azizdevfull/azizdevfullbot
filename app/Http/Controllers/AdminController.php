@@ -296,6 +296,18 @@ class AdminController extends Controller
         return back()->with('success', 'Persona saqlandi.');
     }
 
+    public function updatePersona(Request $request, Persona $persona): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'prompt_instruction' => 'required|string',
+        ]);
+
+        $persona->update($data);
+
+        return back()->with('success', 'Persona yangilandi.');
+    }
+
     public function destroyPersona(Persona $persona): RedirectResponse
     {
         $persona->delete();
@@ -312,5 +324,19 @@ class AdminController extends Controller
         ChatLanguage::where('chat_id', $chatId)->update(['persona_id' => $data['persona_id']]);
 
         return back()->with('success', 'Chat personasi saqlandi.');
+    }
+
+    public function clearChatMessages(int $chatId): RedirectResponse
+    {
+        ChatMessage::where('chat_id', $chatId)->delete();
+
+        return redirect()->route('admin.chats.index')->with('success', 'Chat tarixi tozalandi.');
+    }
+
+    public function destroyChatMessage(ChatMessage $message): RedirectResponse
+    {
+        $message->delete();
+
+        return back()->with('success', 'Xabar o\'chirildi.');
     }
 }

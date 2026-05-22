@@ -67,7 +67,7 @@ class TelegramWebhookController extends Controller
         $isFromOwner = isset($message['from']['id']) && $message['from']['id'] === $connection->telegram_user_id;
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
-        $text = $message['text'] ?? '';
+        $text = $message['text'] ?? $message['caption'] ?? '';
 
         if ($isFromOwner) {
             if (str_starts_with($text, '/')) {
@@ -93,8 +93,13 @@ class TelegramWebhookController extends Controller
         }
 
         if (empty($text)) {
-            $this->sendMediaReply($chatId, $connectionId);
+            // Only send media fallback for voice and video notes
+            if (isset($message['voice']) || isset($message['video_note'])) {
+                $this->sendMediaReply($chatId, $connectionId);
+            }
 
+            // Stay silent for animations (GIFs), stickers, photos, and videos without captions
+            // to avoid annoying "I can't watch/listen" messages.
             return;
         }
 

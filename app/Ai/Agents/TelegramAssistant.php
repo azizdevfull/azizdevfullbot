@@ -24,6 +24,7 @@ class TelegramAssistant implements Agent, Conversational
         public readonly bool $meModeEnabled = false,
         public readonly ?string $language = null,
         public readonly string $addressForm = 'siz',
+        public readonly ?string $personaInstruction = null,
         public readonly array $conversationHistory = [],
     ) {}
 
@@ -41,6 +42,10 @@ class TelegramAssistant implements Agent, Conversational
 
         $form = $this->addressForm === 'sen' ? '"sen" shaklida' : '"siz" shaklida';
         $extras[] = "Suhbatdoshga {$form} murojaat qil.";
+
+        if ($this->personaInstruction) {
+            $extras[] = 'MUHIM QOIDA (Suhbatdosh xarakteri): '.$this->personaInstruction;
+        }
 
         return $base."\n\nMUHIM:\n- ".implode("\n- ", $extras);
     }

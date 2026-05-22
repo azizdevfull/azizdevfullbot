@@ -60,6 +60,7 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             : 'Foydalanuvchi ketma-ket bir nechta xabar yubordi: "'.implode('" va "', $this->messages).'". Barchasiga bitta tabiiy javob ber.';
 
         $chatLang = LanguageDetector::detectAndSave($this->chatId, $combined, $this->chatName);
+        $chatLang->load('persona');
 
         $history = ChatMessage::getHistory($this->chatId, 20)
             ->map(fn ($m) => ['role' => $m->role, 'content' => $m->content])
@@ -82,6 +83,7 @@ class ProcessBusinessMessagesJob implements ShouldQueue
                 meModeEnabled: $meModeActive,
                 language: $chatLang->language_name,
                 addressForm: $chatLang->address_form ?? 'siz',
+                personaInstruction: $chatLang->persona?->prompt_instruction,
                 conversationHistory: $history,
             );
 

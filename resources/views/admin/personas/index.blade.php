@@ -16,7 +16,11 @@
     </div>
     <div class="divide-y divide-slate-100">
         @forelse ($personas as $persona)
-            <div class="px-6 py-4 flex flex-col gap-2" x-data="{ editing: false, name: '{{ $persona->name }}', prompt: '{{ addslashes($persona->prompt_instruction) }}' }">
+            <div class="px-6 py-4 flex flex-col gap-2" x-data="{ 
+                editing: false, 
+                name: '{{ addslashes($persona->name) }}', 
+                prompt: {{ json_encode($persona->prompt_instruction) }} 
+            }">
                 <div class="flex items-center justify-between gap-4">
                     <template x-if="!editing">
                         <h3 class="font-bold text-slate-800">{{ $persona->name }}</h3>

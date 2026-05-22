@@ -280,6 +280,7 @@ config/telegram.php                     # Default sozlamalar + media_replies lis
 | Jadval | Maqsadi |
 |---|---|
 | `business_connections` | Ulangan Telegram Business akkauntlar |
+| `personas` | AI uchun muloqot qoliplari (Personalar) |
 | `bot_settings` | Admin panel sozlamalari (key-value) |
 | `telegram_commands` | Maxsus buyruqlar va javoblar |
 | `chat_languages` | Per-chat til kodi, ism, siz/sen shakli |
@@ -310,6 +311,21 @@ ADMIN_TELEGRAM_CHAT_ID=123456789   # Sizning Telegram ID ingiz
 **Gemini xatoligi**
 ```bash
 php artisan pail   # real-time loglar
+# yoki
+tail -f storage/logs/telegram.log
+```
+
+**Vite manifest xatoligi**
+```bash
+npm run build
+```
+
+---
+
+## Litsenziya
+
+MIT
+ real-time loglar
 # yoki
 tail -f storage/logs/telegram.log
 ```

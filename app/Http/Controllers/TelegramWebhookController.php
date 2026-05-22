@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProcessBusinessMessagesJob;
+use App\Jobs\RefinePersonaJob;
 use App\Jobs\SendBusinessMessageJob;
+use App\Models\BotSetting;
 use App\Models\BusinessConnection;
 use App\Models\ChatLanguage;
+use App\Models\ChatMessage;
 use App\Models\TelegramCommand;
 use App\Telegram\BotAdmin;
 use Illuminate\Http\Request;
@@ -60,14 +63,52 @@ class TelegramWebhookController extends Controller
             $connection = $this->fetchAndSaveConnection($connectionId);
         }
 
-        if (! $connection || ! $connection->can_reply || ! $connection->is_enabled) {
+        if (! $connection || ! $connection->is_enabled) {
             return;
         }
 
-        $isFromOwner = isset($message['from']['id']) && $message['from']['id'] === $connection->telegram_user_id;
+        // Owner identification: Check both telegram_user_id (Business account)
+        // and user_chat_id (the bot-facing ID) for safety.
+        $isFromOwner = isset($message['from']['id']) && (
+            $message['from']['id'] === $connection->telegram_user_id ||
+            $message['from']['id'] === (int) $connection->user_chat_id
+        );
+
         $chatId = $message['chat']['id'];
         $messageId = $message['message_id'];
         $text = $message['text'] ?? $message['caption'] ?? '';
+
+        $chatLang = ChatLanguage::where('chat_id', $chatId)->first();
+        $globalAi = BotSetting::get('ai_enabled', '1') === '1';
+        $perChatAi = $chatLang?->ai_enabled ?? true;
+        $isAiEnabled = $globalAi && $perChatAi;
+
+        $globalLearning = BotSetting::get('learning_enabled', '1') === '1';
+        $perChatLearning = $chatLang?->learning_enabled ?? true;
+        $isLearningEnabled = $globalLearning && $perChatLearning;
+
+        // Logging Logic based on AI and Learn toggles:
+        // 1. If both are OFF -> Do not save anything (Complete privacy).
+        // 2. If Learn is ON -> Save everything (User, Owner, AI) for learning context.
+        // 3. If AI is ON but Learn is OFF -> Save User and AI messages for conversation history, but DO NOT save Owner messages.
+
+        $shouldSaveMessage = false;
+
+        if ($isLearningEnabled) {
+            $shouldSaveMessage = true;
+        } elseif ($isAiEnabled) {
+            // AI is on, Learn is off. Save only if it's NOT from the owner.
+            $shouldSaveMessage = ! $isFromOwner;
+        }
+
+        if (! empty($text) && $shouldSaveMessage) {
+            ChatMessage::create([
+                'chat_id' => $chatId,
+                'role' => $isFromOwner ? 'assistant' : 'user',
+                'content' => $text,
+                'is_manual' => $isFromOwner,
+            ]);
+        }
 
         if ($isFromOwner) {
             if (str_starts_with($text, '/')) {
@@ -87,14 +128,34 @@ class TelegramWebhookController extends Controller
                     $this->deleteBusinessMessages($chatId, [$messageId], $connectionId);
                     $this->sendMessage($chatId, $reply, $connectionId);
                 }
+            } else {
+                // Trigger persona refinement occasionally (e.g., every 10 manual messages)
+                if (! empty($text)) {
+                    if ($isLearningEnabled && $chatLang && $chatLang->persona_id) {
+                        $manualCount = ChatMessage::where('is_manual', true)
+                            ->whereIn('chat_id', function ($query) use ($chatLang) {
+                                $query->select('chat_id')
+                                    ->from('chat_languages')
+                                    ->where('persona_id', $chatLang->persona_id);
+                            })->count();
+
+                        if ($manualCount > 0 && $manualCount % 10 === 0) {
+                            RefinePersonaJob::dispatch($chatLang->persona_id);
+                        }
+                    }
+                }
             }
 
             return;
         }
 
+        if (! $connection->can_reply) {
+            return;
+        }
+
         if (empty($text)) {
-            // Only send media fallback for voice and video notes
-            if (isset($message['voice']) || isset($message['video_note'])) {
+            // Only send media fallback if AI is enabled globally and locally
+            if ($isAiEnabled && (isset($message['voice']) || isset($message['video_note']))) {
                 $this->sendMediaReply($chatId, $connectionId);
             }
 
@@ -103,8 +164,10 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        $chatName = $this->resolveChatName($message['chat'] ?? []);
-        $this->debounceAiReply($chatId, $connectionId, $text, $chatName);
+        if ($isAiEnabled) {
+            $chatName = $this->resolveChatName($message['chat'] ?? []);
+            $this->debounceAiReply($chatId, $connectionId, $text, $chatName);
+        }
     }
 
     private function handleDirectMessage(array $message): void

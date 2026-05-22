@@ -14,12 +14,16 @@ class ChatLanguage extends Model
         'is_manual',
         'address_form',
         'persona_id',
+        'ai_enabled',
+        'learning_enabled',
     ];
 
     protected $casts = [
         'chat_id' => 'integer',
         'is_manual' => 'boolean',
         'persona_id' => 'integer',
+        'ai_enabled' => 'boolean',
+        'learning_enabled' => 'boolean',
     ];
 
     public function persona()

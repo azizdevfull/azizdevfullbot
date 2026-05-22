@@ -34,6 +34,33 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3 flex-wrap">
+                    <form method="POST" action="{{ route('admin.chats.status.update', $lang->chat_id) }}" class="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                        @csrf
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">AI</span>
+                            <label class="toggle-switch relative inline-flex items-center cursor-pointer scale-75">
+                                <input type="checkbox" name="ai_enabled" value="1" onchange="this.form.submit()"
+                                    {{ $lang->ai_enabled ? 'checked' : '' }}
+                                    class="sr-only">
+                                <div class="toggle-track relative w-9 h-5 bg-slate-200 rounded-full transition-colors duration-200">
+                                    <div class="toggle-thumb absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200"></div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="w-px h-3 bg-slate-200"></div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Learn</span>
+                            <label class="toggle-switch relative inline-flex items-center cursor-pointer scale-75">
+                                <input type="checkbox" name="learning_enabled" value="1" onchange="this.form.submit()"
+                                    {{ $lang->learning_enabled ? 'checked' : '' }}
+                                    class="sr-only">
+                                <div class="toggle-track relative w-9 h-5 bg-slate-200 rounded-full transition-colors duration-200">
+                                    <div class="toggle-thumb absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200"></div>
+                                </div>
+                            </label>
+                        </div>
+                    </form>
+
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
                         {{ $lang->is_manual ? 'bg-amber-100 text-amber-700' : 'bg-teal-100 text-teal-700' }}">
                         {{ $lang->is_manual ? '✎ Qo\'lda' : '⟳ Avtomatik' }}
@@ -165,16 +192,29 @@
                     <p class="text-xs text-slate-400">Gemini AI tizimi va botning umumiy xulq-atvori</p>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">AI</span>
-                <label class="toggle-switch relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" name="ai_enabled" value="1"
-                        {{ $settings['ai_enabled'] === '1' ? 'checked' : '' }}
-                        class="sr-only">
-                    <div class="toggle-track relative w-11 h-6 bg-slate-200 rounded-full transition-colors duration-200">
-                        <div class="toggle-thumb absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200"></div>
-                    </div>
-                </label>
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">AI</span>
+                    <label class="toggle-switch relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="ai_enabled" value="1"
+                            {{ $settings['ai_enabled'] === '1' ? 'checked' : '' }}
+                            class="sr-only">
+                        <div class="toggle-track relative w-11 h-6 bg-slate-200 rounded-full transition-colors duration-200">
+                            <div class="toggle-thumb absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200"></div>
+                        </div>
+                    </label>
+                </div>
+                <div class="flex items-center gap-3 border-l border-slate-100 pl-6">
+                    <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Learn Mode</span>
+                    <label class="toggle-switch relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="learning_enabled" value="1"
+                            {{ $settings['learning_enabled'] === '1' ? 'checked' : '' }}
+                            class="sr-only">
+                        <div class="toggle-track relative w-11 h-6 bg-slate-200 rounded-full transition-colors duration-200">
+                            <div class="toggle-thumb absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200"></div>
+                        </div>
+                    </label>
+                </div>
             </div>
         </div>
         <div class="px-6 py-6 space-y-6">

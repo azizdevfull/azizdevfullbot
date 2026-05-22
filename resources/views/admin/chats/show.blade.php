@@ -108,6 +108,38 @@
                 <p class="mt-2 text-[10px] text-slate-400">AI javob berishda "Siz" yoki "Sen" shaklidan foydalanadi.</p>
             </div>
 
+            {{-- Status toggles --}}
+            <div class="mb-6 md:mb-0">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Holat</label>
+                <form method="POST" action="{{ route('admin.chats.status.update', $chatId) }}" class="flex items-center gap-6 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    @csrf
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">AI</span>
+                        <label class="toggle-switch relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="ai_enabled" value="1" onchange="this.form.submit()"
+                                {{ ($language->ai_enabled ?? true) ? 'checked' : '' }}
+                                class="sr-only">
+                            <div class="toggle-track relative w-10 h-5.5 bg-slate-200 rounded-full transition-colors duration-200">
+                                <div class="toggle-thumb absolute top-0.5 left-0.5 w-4.5 h-4.5 bg-white rounded-full shadow-sm transition-transform duration-200"></div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="w-px h-4 bg-slate-200"></div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Learn</span>
+                        <label class="toggle-switch relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="learning_enabled" value="1" onchange="this.form.submit()"
+                                {{ ($language->learning_enabled ?? true) ? 'checked' : '' }}
+                                class="sr-only">
+                            <div class="toggle-track relative w-10 h-5.5 bg-slate-200 rounded-full transition-colors duration-200">
+                                <div class="toggle-thumb absolute top-0.5 left-0.5 w-4.5 h-4.5 bg-white rounded-full shadow-sm transition-transform duration-200"></div>
+                            </div>
+                        </label>
+                    </div>
+                </form>
+                <p class="mt-2 text-[10px] text-slate-400">AI javobi va o'rganish rejimini yoqish/o'chirish.</p>
+            </div>
+
             {{-- Persona settings --}}
             <div>
                 <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Persona (Xarakter)</label>

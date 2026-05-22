@@ -66,15 +66,6 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             ->map(fn ($m) => ['role' => $m->role, 'content' => $m->content])
             ->all();
 
-        if (! $this->userMessageCreated) {
-            ChatMessage::create([
-                'chat_id' => $this->chatId,
-                'role' => 'user',
-                'content' => $combined,
-            ]);
-            $this->userMessageCreated = true;
-        }
-
         try {
             $meModeActive = Cache::get("memode_{$this->chatId}", false)
                 || BotSetting::get('me_mode_global', '0') === '1';

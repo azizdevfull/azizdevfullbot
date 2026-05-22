@@ -70,6 +70,18 @@
                             Saqlash
                         </button>
                     </form>
+                    <form method="POST" action="{{ route('admin.chats.persona.set', $lang->chat_id) }}" class="flex items-center gap-2">
+                        @csrf
+                        <select name="persona_id" class="text-xs rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-400 transition">
+                            <option value="">Persona: Oddiy</option>
+                            @foreach ($personas as $persona)
+                                <option value="{{ $persona->id }}" {{ ($lang->persona_id ?? '') == $persona->id ? 'selected' : '' }}>{{ $persona->name }}</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="text-xs font-semibold px-3 py-1.5 rounded-xl border border-purple-200 text-purple-600 bg-purple-50 hover:bg-purple-100 transition">
+                            Saqlash
+                        </button>
+                    </form>
                     @if ($lang->is_manual)
                         <form method="POST" action="{{ route('admin.chats.language.reset', $lang->chat_id) }}">
                             @csrf

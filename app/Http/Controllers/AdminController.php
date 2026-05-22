@@ -101,7 +101,8 @@ class AdminController extends Controller
     public function settings(): View
     {
         return view('admin.settings.index', [
-            'chatLanguages' => ChatLanguage::all()->keyBy('chat_id'),
+            'chatLanguages' => ChatLanguage::with('persona')->get()->keyBy('chat_id'),
+            'personas' => Persona::all(),
             'settings' => [
                 'ai_enabled' => BotSetting::get('ai_enabled', '1'),
                 'ai_instructions' => BotSetting::get('ai_instructions', config('telegram.ai_instructions')),

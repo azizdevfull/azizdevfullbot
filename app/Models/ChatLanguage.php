@@ -13,12 +13,19 @@ class ChatLanguage extends Model
         'language_name',
         'is_manual',
         'address_form',
+        'persona_id',
     ];
 
     protected $casts = [
         'chat_id' => 'integer',
         'is_manual' => 'boolean',
+        'persona_id' => 'integer',
     ];
+
+    public function persona()
+    {
+        return $this->belongsTo(Persona::class);
+    }
 
     public static function forChat(int|string $chatId): ?self
     {

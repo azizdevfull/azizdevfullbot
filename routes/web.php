@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\LearnController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TelegramWebhookController;
 use Illuminate\Support\Facades\Route;
@@ -50,5 +51,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::post('chats/{chatId}/clear', [AdminController::class, 'clearChatMessages'])->name('chats.clear');
         Route::delete('messages/{message}', [AdminController::class, 'destroyChatMessage'])->name('messages.destroy');
+
+        Route::post('learn/{chatId}/analyze', [LearnController::class, 'analyze'])->name('learn.analyze');
+        Route::get('learn/{chatId}/review', [LearnController::class, 'review'])->name('learn.review');
+        Route::post('learn/{chatId}/save', [LearnController::class, 'save'])->name('learn.save');
+        Route::post('learn/{chatId}/reject', [LearnController::class, 'reject'])->name('learn.reject');
     });
 });

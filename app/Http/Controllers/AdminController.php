@@ -8,9 +8,11 @@ use App\Models\ChatLanguage;
 use App\Models\ChatMessage;
 use App\Models\Persona;
 use App\Models\TelegramCommand;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 
@@ -21,6 +23,24 @@ class AdminController extends Controller
         return view('admin.login', [
             'otpSent' => session()->has('otp_pending'),
         ]);
+    }
+
+    public function postLogin(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if ($user && Hash::check($request->password, $user->password)) {
+            $request->session()->put('admin_authenticated', true);
+
+            return redirect()->route('admin.dashboard');
+        }
+
+        return back()->withErrors(['email' => 'Email yoki parol noto\'g\'ri.']);
     }
 
     public function requestOtp(Request $request): RedirectResponse
@@ -332,6 +352,42 @@ class AdminController extends Controller
         $persona->delete();
 
         return back()->with('success', 'Persona o\'chirildi.');
+    }
+
+    public function profile(): View
+    {
+        return view('admin.profile', [
+            'user' => User::firstOrCreate([], [
+                'name' => 'Admin',
+                'email' => 'admin@azizdev.uz',
+                'password' => 'password', // Will be hashed by model cast
+            ]),
+        ]);
+    }
+
+    public function updateProfile(Request $request): RedirectResponse
+    {
+        $user = User::firstOrCreate([], [
+            'name' => 'Admin',
+            'email' => 'admin@azizdev.uz',
+            'password' => 'password',
+        ]);
+
+        $data = $request->validate(['name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,'.$user->id,
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+
+        $user->name = $data['name'];
+        $user->email = $data['email'];
+
+        if (! empty($data['password'])) {
+            $user->password = Hash::make($data['password']);
+        }
+
+        $user->save();
+
+        return back()->with('success', 'Profil muvaffaqiyatli yangilandi.');
     }
 
     public function setChatPersona(Request $request, int $chatId): RedirectResponse

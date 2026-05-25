@@ -18,6 +18,7 @@ Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AdminController::class, 'login'])->name('login');
+    Route::post('login', [AdminController::class, 'postLogin'])->name('login.post');
     Route::post('otp/request', [AdminController::class, 'requestOtp'])->name('otp.request');
     Route::post('otp/verify', [AdminController::class, 'verifyOtp'])->name('otp.verify');
     Route::post('logout', [AdminController::class, 'logout'])->name('logout');
@@ -48,6 +49,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('personas', [AdminController::class, 'storePersona'])->name('personas.store');
         Route::put('personas/{persona}', [AdminController::class, 'updatePersona'])->name('personas.update');
         Route::delete('personas/{persona}', [AdminController::class, 'destroyPersona'])->name('personas.destroy');
+
+        Route::get('profile', [AdminController::class, 'profile'])->name('profile');
+        Route::post('profile', [AdminController::class, 'updateProfile'])->name('profile.update');
 
         Route::post('chats/{chatId}/clear', [AdminController::class, 'clearChatMessages'])->name('chats.clear');
         Route::delete('messages/{message}', [AdminController::class, 'destroyChatMessage'])->name('messages.destroy');

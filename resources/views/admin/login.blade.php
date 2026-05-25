@@ -9,6 +9,7 @@
         .gradient-btn { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
         .gradient-btn:hover { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
         .otp-input { letter-spacing: .4em; }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen font-sans antialiased flex items-center justify-center relative overflow-hidden" style="background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)">
@@ -20,7 +21,7 @@
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-5" style="background: radial-gradient(circle, #a78bfa, transparent)"></div>
     </div>
 
-    <div class="relative w-full max-w-sm px-4">
+    <div class="relative w-full max-w-sm px-4" x-data="{ mode: '{{ $otpSent ? 'otp' : (old('email') ? 'password' : 'otp') }}' }">
         <div class="bg-white/10 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-2xl p-8">
 
             {{-- Logo --}}
@@ -32,7 +33,16 @@
                 <p class="text-sm text-white/50 mt-1">@azizdevfullbot</p>
             </div>
 
-            @if (! $otpSent)
+            {{-- Tabs --}}
+            @if (!$otpSent)
+                <div class="flex p-1 bg-white/5 rounded-xl mb-6">
+                    <button @click="mode = 'otp'" :class="mode === 'otp' ? 'bg-white/10 text-white' : 'text-white/40'" class="flex-1 py-2 text-xs font-bold rounded-lg transition">Telegram</button>
+                    <button @click="mode = 'password'" :class="mode === 'password' ? 'bg-white/10 text-white' : 'text-white/40'" class="flex-1 py-2 text-xs font-bold rounded-lg transition">Parol</button>
+                </div>
+            @endif
+
+            {{-- OTP Request Mode --}}
+            <div x-show="mode === 'otp' && !{{ $otpSent ? 'true' : 'false' }}" x-cloak>
                 <p class="text-sm text-white/60 text-center mb-6">Telegram orqali bir martalik kod oling</p>
 
                 @error('otp')
@@ -45,7 +55,10 @@
                         Telegram ga kod yuborish
                     </button>
                 </form>
-            @else
+            </div>
+
+            {{-- OTP Verify Mode --}}
+            <div x-show="mode === 'otp' && {{ $otpSent ? 'true' : 'false' }}" x-cloak>
                 <div class="text-center mb-6">
                     <div class="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/30 rounded-full px-4 py-1.5 mb-3">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -81,7 +94,33 @@
                         Qayta yuborish
                     </button>
                 </form>
-            @endif
+            </div>
+
+            {{-- Password Login Mode --}}
+            <div x-show="mode === 'password'" x-cloak>
+                <form method="POST" action="{{ route('admin.login.post') }}" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5 ml-1">Email</label>
+                        <input type="email" name="email" value="{{ old('email') }}" required
+                            class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1.5 ml-1">Parol</label>
+                        <input type="password" name="password" required
+                            class="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition">
+                    </div>
+
+                    @if ($errors->has('email'))
+                        <p class="text-xs text-red-300 text-center">{{ $errors->first('email') }}</p>
+                    @endif
+
+                    <button type="submit" class="gradient-btn w-full text-white rounded-xl px-4 py-3 text-sm font-semibold transition shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-[0.98] mt-2">
+                        Kirish
+                    </button>
+                </form>
+            </div>
+
         </div>
     </div>
 </body>

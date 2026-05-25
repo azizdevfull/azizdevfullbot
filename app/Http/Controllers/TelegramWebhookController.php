@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProcessBusinessMessagesJob;
+use App\Jobs\ProcessVoiceMessageJob;
 use App\Jobs\RefinePersonaJob;
 use App\Jobs\SendBusinessMessageJob;
 use App\Jobs\SendRepeatedMessageJob;
@@ -109,6 +110,14 @@ class TelegramWebhookController extends Controller
                 'content' => $text,
                 'is_manual' => $isFromOwner,
             ]);
+        } elseif (isset($message['voice']) && $shouldSaveMessage && ! $isFromOwner) {
+            // Save placeholder for voice message
+            ChatMessage::create([
+                'chat_id' => $chatId,
+                'role' => 'user',
+                'content' => '🎤 [Ovozli xabar kutilmoqda...]',
+                'is_manual' => false,
+            ]);
         }
 
         if ($isFromOwner) {
@@ -188,8 +197,29 @@ class TelegramWebhookController extends Controller
         }
 
         if (empty($text)) {
+            // Handle voice messages with transcription
+            $isVoiceToTextEnabled = BotSetting::get('voice_to_text_enabled', '1') === '1';
+
+            if ($isAiEnabled && isset($message['voice'])) {
+                if ($isVoiceToTextEnabled) {
+                    ProcessVoiceMessageJob::dispatch(
+                        $chatId,
+                        $connectionId,
+                        $message['voice']['file_id'],
+                        $this->resolveChatName($message['chat'] ?? [])
+                    );
+
+                    return;
+                } else {
+                    // Fallback to original "can't listen" behavior
+                    $this->sendMediaReply($chatId, $connectionId);
+
+                    return;
+                }
+            }
+
             // Only send media fallback if AI is enabled globally and locally
-            if ($isAiEnabled && (isset($message['voice']) || isset($message['video_note']))) {
+            if ($isAiEnabled && isset($message['video_note'])) {
                 $this->sendMediaReply($chatId, $connectionId);
             }
 

@@ -17,6 +17,9 @@ Shaxsiy Telegram akkauntingiz uchun "Raqamli Egizak" (Digital Twin). Siz band bo
     *   **Review & Edit:** AI taklif qilgan yangi qoidalarni (nima qo'shildi, nima olib tashlandi) ko'rib chiqishingiz va saqlashdan oldin tahrirlashingiz mumkin.
     *   **Reject & Feedback:** Agar natija yoqmasa, rad etib sababini yozishingiz mumkin (masalan: "ko'proq emoji ishlat"). AI xatosini tushunib, qaytadan tahlil qiladi.
     *   **Persona History:** Har bir muvaffaqiyatli yangilanishdan so'ng personaning eski holati tarixda saqlab qolinadi. Admin paneldagi "Personalar" bo'limida barcha o'zgarishlarni vaqt va chat kesimida ko'rish mumkin.
+- **Voice-to-Text (Ovozli xabarlar)** — Bot ovozli xabarlarni Gemini 1.5 Flash yordamida avtomatik ravishda matnga aylantiradi.
+    *   **AI Tushunishi:** AI ovozli xabar mazmunini o'qiy oladi va unga matnli javob qaytaradi.
+    *   **Admin Panel:** Ovozli xabarlar transkripsiyasi admin panelda chat tarixida ko'rinadi.
 - **Granular Boshqaruv** — Har bir chat uchun AI javobini va o'rganish rejimini alohida yoqish/o'chirish imkoniyati. Masalan: sevgan insoningiz bilan chatda AIni o'chirib, faqat o'rganishni (Learn Mode) yoqib qo'yish mumkin.
 - **Media xabarlar bilan ishlash** — Ovozli xabar yoki video xabar (video note) kelganda "Hozir eshita olmayman/ko'ra olmayman" kabi tabiiy javoblar. GIF, sticker va oddiy rasmlar (caption'siz) emotsiya sifatida qabul qilinib, ularga xalaqit berilmaydi.
 - **Rasm va Video Caption** — Agar foydalanuvchi rasm yoki videoga izoh yozib yuborsa, AI o'sha matnni o'qib javob qaytaradi.

@@ -215,6 +215,17 @@
                         </div>
                     </label>
                 </div>
+                <div class="flex items-center gap-3 border-l border-slate-100 pl-6">
+                    <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Voice-to-Text</span>
+                    <label class="toggle-switch relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="voice_to_text_enabled" value="1"
+                            {{ ($settings['voice_to_text_enabled'] ?? '1') === '1' ? 'checked' : '' }}
+                            class="sr-only">
+                        <div class="toggle-track relative w-11 h-6 bg-slate-200 rounded-full transition-colors duration-200">
+                            <div class="toggle-thumb absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200"></div>
+                        </div>
+                    </label>
+                </div>
             </div>
         </div>
         <div class="px-6 py-6 space-y-6">

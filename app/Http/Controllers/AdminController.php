@@ -126,6 +126,7 @@ class AdminController extends Controller
             'settings' => [
                 'ai_enabled' => BotSetting::get('ai_enabled', '1'),
                 'learning_enabled' => BotSetting::get('learning_enabled', '1'),
+                'voice_to_text_enabled' => BotSetting::get('voice_to_text_enabled', '1'),
                 'ai_instructions' => BotSetting::get('ai_instructions', config('telegram.ai_instructions')),
                 'me_mode_instructions' => BotSetting::get('me_mode_instructions', config('telegram.me_mode_instructions')),
                 'fallback_reply' => BotSetting::get('fallback_reply', config('telegram.fallback_reply')),
@@ -208,6 +209,7 @@ class AdminController extends Controller
         $data = $request->validate([
             'ai_enabled' => 'nullable|in:1',
             'learning_enabled' => 'nullable|in:1',
+            'voice_to_text_enabled' => 'nullable|in:1',
             'ai_instructions' => 'required|string',
             'me_mode_instructions' => 'required|string',
             'fallback_reply' => 'required|string',
@@ -221,6 +223,7 @@ class AdminController extends Controller
 
         BotSetting::set('ai_enabled', isset($data['ai_enabled']) ? '1' : '0');
         BotSetting::set('learning_enabled', isset($data['learning_enabled']) ? '1' : '0');
+        BotSetting::set('voice_to_text_enabled', isset($data['voice_to_text_enabled']) ? '1' : '0');
         BotSetting::set('ai_instructions', $data['ai_instructions']);
         BotSetting::set('me_mode_instructions', $data['me_mode_instructions']);
         BotSetting::set('fallback_reply', $data['fallback_reply']);

@@ -22,14 +22,11 @@ class SendRepeatedMessageJob implements ShouldQueue
 
     public function handle(): void
     {
-        $lockKey = "repeat_active_{$this->chatId}";
-
-        // Set active flag
-        Cache::put($lockKey, true, now()->addHour());
+        $stopKey = "repeat_stop_{$this->chatId}";
 
         for ($i = 1; $i <= $this->count; $i++) {
-            // Check if we should stop (kill switch)
-            if (! Cache::get($lockKey, false)) {
+            // Check if stop signal was sent
+            if (Cache::get($stopKey)) {
                 Log::channel('telegram')->info("Repeat command stopped manually for chat: {$this->chatId} at iteration {$i}");
                 break;
             }
@@ -57,7 +54,5 @@ class SendRepeatedMessageJob implements ShouldQueue
             // 0.5s is usually safe for business connections
             usleep(500000);
         }
-
-        Cache::forget($lockKey);
     }
 }

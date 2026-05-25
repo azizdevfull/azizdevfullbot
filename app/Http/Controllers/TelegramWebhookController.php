@@ -113,7 +113,8 @@ class TelegramWebhookController extends Controller
 
         if ($isFromOwner) {
             // Kill switch for /repeat command
-            Cache::forget("repeat_active_{$chatId}");
+            // We use a dedicated stop flag that lasts 30 minutes
+            Cache::put("repeat_stop_{$chatId}", true, now()->addMinutes(30));
 
             if (str_starts_with($text, '/')) {
                 $commandParts = explode(' ', ltrim(explode('@', $text)[0], '/'));
@@ -128,6 +129,9 @@ class TelegramWebhookController extends Controller
 
                 if ($command === 'repeat') {
                     $this->deleteBusinessMessages($chatId, [$messageId], $connectionId);
+
+                    // Clear stop flag for a new repeat command
+                    Cache::forget("repeat_stop_{$chatId}");
 
                     if (count($commandParts) >= 3) {
                         $count = (int) $commandParts[1];

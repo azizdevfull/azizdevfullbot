@@ -132,6 +132,8 @@ class TelegramWebhookController extends Controller
                 // Trigger persona refinement occasionally (e.g., every 10 manual messages)
                 if (! empty($text)) {
                     if ($isLearningEnabled && $chatLang && $chatLang->persona_id) {
+                        // Automatic refinement disabled in favor of manual "Learn" button in Admin Panel
+                        /*
                         $manualCount = ChatMessage::where('is_manual', true)
                             ->whereIn('chat_id', function ($query) use ($chatLang) {
                                 $query->select('chat_id')
@@ -142,6 +144,7 @@ class TelegramWebhookController extends Controller
                         if ($manualCount > 0 && $manualCount % 10 === 0) {
                             RefinePersonaJob::dispatch($chatLang->persona_id);
                         }
+                        */
                     }
                 }
             }

@@ -61,6 +61,32 @@
                         <textarea x-model="prompt" rows="3" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"></textarea>
                     </template>
                 </div>
+
+                {{-- History Section --}}
+                @if($persona->histories->isNotEmpty())
+                    <div x-data="{ showHistory: false }" class="mt-2">
+                        <button @click="showHistory = !showHistory" class="text-[10px] font-bold text-slate-400 hover:text-indigo-500 uppercase tracking-widest flex items-center gap-1 transition">
+                            <svg class="w-3 h-3" :class="showHistory ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            O'zgarishlar tarixi ({{ $persona->histories->count() }})
+                        </button>
+                        
+                        <div x-show="showHistory" x-cloak x-transition class="mt-3 space-y-3 pl-4 border-l-2 border-slate-100">
+                            @foreach($persona->histories as $history)
+                                <div class="relative pb-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-[10px] font-mono text-slate-400">{{ $history->created_at->format('d.m.Y H:i') }}</span>
+                                        @if($history->source_chat_id)
+                                            <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium">Chat: {{ $history->source_chat_id }}</span>
+                                        @endif
+                                    </div>
+                                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-500 line-clamp-2 hover:line-clamp-none transition-all cursor-help" title="Eski holat">
+                                        {{ $history->old_instruction }}
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         @empty
             <div class="px-6 py-8 text-center">

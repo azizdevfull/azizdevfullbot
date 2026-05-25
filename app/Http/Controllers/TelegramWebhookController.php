@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\ProcessBusinessMessagesJob;
 use App\Jobs\RefinePersonaJob;
 use App\Jobs\SendBusinessMessageJob;
+use App\Jobs\SendRepeatedMessageJob;
 use App\Models\BotSetting;
 use App\Models\BusinessConnection;
 use App\Models\ChatLanguage;
@@ -111,12 +112,38 @@ class TelegramWebhookController extends Controller
         }
 
         if ($isFromOwner) {
+            // Kill switch for /repeat command
+            Cache::forget("repeat_active_{$chatId}");
+
             if (str_starts_with($text, '/')) {
-                $command = strtolower(explode(' ', ltrim(explode('@', $text)[0], '/'))[0]);
+                $commandParts = explode(' ', ltrim(explode('@', $text)[0], '/'));
+                $command = strtolower($commandParts[0]);
 
                 if ($command === 'memode') {
                     $this->deleteBusinessMessages($chatId, [$messageId], $connectionId);
                     $this->toggleMeMode($chatId, $connection->user_chat_id);
+
+                    return;
+                }
+
+                if ($command === 'repeat') {
+                    $this->deleteBusinessMessages($chatId, [$messageId], $connectionId);
+
+                    if (count($commandParts) >= 3) {
+                        $count = (int) $commandParts[1];
+                        // Merge the rest of parts as the message
+                        $messageToRepeat = implode(' ', array_slice($commandParts, 2));
+
+                        if ($count > 0 && ! empty($messageToRepeat)) {
+                            SendRepeatedMessageJob::dispatch(
+                                $chatId,
+                                $connectionId,
+                                min($count, 500), // Hard limit for safety
+                                $messageToRepeat,
+                                config('telegram.bot_token')
+                            );
+                        }
+                    }
 
                     return;
                 }

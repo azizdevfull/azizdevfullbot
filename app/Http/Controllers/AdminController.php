@@ -299,7 +299,7 @@ class AdminController extends Controller
     public function personas(): View
     {
         return view('admin.personas.index', [
-            'personas' => Persona::orderBy('name')->get(),
+            'personas' => Persona::with('histories')->orderBy('name')->get(),
         ]);
     }
 

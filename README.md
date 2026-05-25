@@ -16,6 +16,7 @@ Shaxsiy Telegram akkauntingiz uchun "Raqamli Egizak" (Digital Twin). Siz band bo
     *   **is_manual filtri:** AI faqat siz o'zingiz yozgan javoblarni tahlil qiladi (kamida 3 ta xabar bo'lishi kerak).
     *   **Review & Edit:** AI taklif qilgan yangi qoidalarni (nima qo'shildi, nima olib tashlandi) ko'rib chiqishingiz va saqlashdan oldin tahrirlashingiz mumkin.
     *   **Reject & Feedback:** Agar natija yoqmasa, rad etib sababini yozishingiz mumkin (masalan: "ko'proq emoji ishlat"). AI xatosini tushunib, qaytadan tahlil qiladi.
+    *   **Persona History:** Har bir muvaffaqiyatli yangilanishdan so'ng personaning eski holati tarixda saqlab qolinadi. Admin paneldagi "Personalar" bo'limida barcha o'zgarishlarni vaqt va chat kesimida ko'rish mumkin.
 - **Granular Boshqaruv** — Har bir chat uchun AI javobini va o'rganish rejimini alohida yoqish/o'chirish imkoniyati. Masalan: sevgan insoningiz bilan chatda AIni o'chirib, faqat o'rganishni (Learn Mode) yoqib qo'yish mumkin.
 - **Media xabarlar bilan ishlash** — Ovozli xabar yoki video xabar (video note) kelganda "Hozir eshita olmayman/ko'ra olmayman" kabi tabiiy javoblar. GIF, sticker va oddiy rasmlar (caption'siz) emotsiya sifatida qabul qilinib, ularga xalaqit berilmaydi.
 - **Rasm va Video Caption** — Agar foydalanuvchi rasm yoki videoga izoh yozib yuborsa, AI o'sha matnni o'qib javob qaytaradi.
@@ -193,8 +194,9 @@ Bu buyruqlar faqat **siz** (akkaunt egasi) tomonidan yoziladi. Bot xabarni o'chi
 |---|---|
 | `/hello` | `Assalomu Alaykum! 👋` yuboradi |
 | `/memode` | Me Mode ni yoqadi/o'chiradi (shu chat uchun) |
+| `/repeat {soni} {xabar}` | Bir xil xabarni bir necha bor yuboradi (Spam/Repeat) |
 
-> Admin paneldan yangi buyruqlar qo'shishingiz mumkin.
+> **To'xtatish:** `/repeat` buyrug'ini to'xtatish uchun o'sha chatga birorta xabar (masalan nuqta `.`) yuborishingiz kifoya. Bot siz yozganingizni sezishi bilan takrorlashni to'xtatadi.
 
 ### Til va murojat boshqaruvi
 

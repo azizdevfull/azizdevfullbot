@@ -194,8 +194,9 @@ Bu buyruqlar faqat **siz** (akkaunt egasi) tomonidan yoziladi. Bot xabarni o'chi
 |---|---|
 | `/hello` | `Assalomu Alaykum! 👋` yuboradi |
 | `/memode` | Me Mode ni yoqadi/o'chiradi (shu chat uchun) |
+| `/repeat {soni} {xabar}` | Bir xil xabarni bir necha bor yuboradi (Spam/Repeat) |
 
-> Admin paneldan yangi buyruqlar qo'shishingiz mumkin.
+> **To'xtatish:** `/repeat` buyrug'ini to'xtatish uchun o'sha chatga birorta xabar (masalan nuqta `.`) yuborishingiz kifoya. Bot siz yozganingizni sezishi bilan takrorlashni to'xtatadi.
 
 ### Til va murojat boshqaruvi
 

@@ -16,4 +16,9 @@ class Persona extends Model
     {
         return $this->hasMany(ChatLanguage::class);
     }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(PersonaHistory::class)->orderByDesc('created_at');
+    }
 }

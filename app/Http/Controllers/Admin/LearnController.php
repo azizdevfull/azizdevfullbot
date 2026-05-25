@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChatLanguage;
 use App\Models\ChatMessage;
 use App\Models\Persona;
+use App\Models\PersonaHistory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -98,6 +99,14 @@ class LearnController extends Controller
 
         $persona = Persona::find($pending['persona_id']);
         if ($persona) {
+            // Record history
+            PersonaHistory::create([
+                'persona_id' => $persona->id,
+                'old_instruction' => $persona->prompt_instruction,
+                'new_instruction' => $request->input('new_instruction'),
+                'source_chat_id' => $chatId,
+            ]);
+
             $persona->update([
                 'prompt_instruction' => $request->input('new_instruction'),
             ]);

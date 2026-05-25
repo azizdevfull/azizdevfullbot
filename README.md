@@ -11,7 +11,11 @@ Shaxsiy Telegram akkauntingiz uchun "Raqamli Egizak" (Digital Twin). Siz band bo
 - **AI avtomatik javob** — Gemini AI orqali har qanday mavzuda (shaxsiy, ish, oilaviy) professional yoki norasmiy javoblar.
 - **Til aniqlash** — Har bir chat uchun til avtomatik aniqlanadi (o'zbek, rus, ingliz va h.k.).
 - **Siz/Sen boshqaruvi** — Yaqin insonlar bilan "sen", boshqalar bilan "siz" orqali muloqot qilish sozlamasi.
-- **Learn Mode (Continuous Learning)** — AI sizning qo'lda yozgan javoblaringizni va muloqot kontekstini o'rganib boradi. Har 10 ta manual javobdan keyin AI sizning uslubingizni (slang, emoji, ohang) tahlil qiladi va o'z personasini avtomatik yangilaydi.
+- **Learn Mode (Continuous Learning)** — AI sizning qo'lda yozgan javoblaringizni va muloqot kontekstini o'rganib boradi. 
+    *   **Manual Tahlil:** Admin paneldagi chat ichida "Tahlil (Learn)" tugmasi orqali ishga tushiriladi.
+    *   **is_manual filtri:** AI faqat siz o'zingiz yozgan javoblarni tahlil qiladi (kamida 3 ta xabar bo'lishi kerak).
+    *   **Review & Edit:** AI taklif qilgan yangi qoidalarni (nima qo'shildi, nima olib tashlandi) ko'rib chiqishingiz va saqlashdan oldin tahrirlashingiz mumkin.
+    *   **Reject & Feedback:** Agar natija yoqmasa, rad etib sababini yozishingiz mumkin (masalan: "ko'proq emoji ishlat"). AI xatosini tushunib, qaytadan tahlil qiladi.
 - **Granular Boshqaruv** — Har bir chat uchun AI javobini va o'rganish rejimini alohida yoqish/o'chirish imkoniyati. Masalan: sevgan insoningiz bilan chatda AIni o'chirib, faqat o'rganishni (Learn Mode) yoqib qo'yish mumkin.
 - **Media xabarlar bilan ishlash** — Ovozli xabar yoki video xabar (video note) kelganda "Hozir eshita olmayman/ko'ra olmayman" kabi tabiiy javoblar. GIF, sticker va oddiy rasmlar (caption'siz) emotsiya sifatida qabul qilinib, ularga xalaqit berilmaydi.
 - **Rasm va Video Caption** — Agar foydalanuvchi rasm yoki videoga izoh yozib yuborsa, AI o'sha matnni o'qib javob qaytaradi.

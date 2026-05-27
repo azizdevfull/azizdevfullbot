@@ -465,7 +465,8 @@ class AdminController extends Controller
             } else {
                 $label = '[AI]      ';
             }
-            $history .= $label.' '.$msg->content."\n";
+            $time = $msg->created_at?->format('Y-m-d H:i');
+            $history .= "[{$time}] {$label} {$msg->content}\n";
         }
 
         if (! $history) {

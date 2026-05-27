@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\ChatMessage;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Http;
@@ -24,6 +25,13 @@ class SendBusinessMessageJob implements ShouldQueue
             'chat_id' => $this->chatId,
             'text' => $this->text,
             'business_connection_id' => $this->connectionId,
+        ]);
+
+        ChatMessage::create([
+            'chat_id' => $this->chatId,
+            'role' => 'assistant',
+            'content' => $this->text,
+            'is_manual' => false,
         ]);
     }
 }

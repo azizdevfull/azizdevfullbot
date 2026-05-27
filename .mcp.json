@@ -3,8 +3,8 @@
         "laravel-boost": {
             "command": "wsl.exe",
             "args": [
-                "/usr/bin/php8.4",
-                "/home/azizbek/personal/azizdevfull/artisan",
+                "/home/azizdev/.config/herd-lite/bin/php",
+                "/home/azizdev/personal/azizdevfullbot/artisan",
                 "boost:mcp"
             ]
         }

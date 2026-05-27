@@ -118,6 +118,35 @@ class TelegramWebhookController extends Controller
                 'content' => '🎤 [Ovozli xabar kutilmoqda...]',
                 'is_manual' => false,
             ]);
+        } elseif (isset($message['video_note']) && $shouldSaveMessage && ! $isFromOwner) {
+            ChatMessage::create([
+                'chat_id' => $chatId,
+                'role' => 'user',
+                'content' => '⭕ [Video xabar]',
+                'is_manual' => false,
+            ]);
+        } elseif (isset($message['video']) && $shouldSaveMessage && ! $isFromOwner) {
+            ChatMessage::create([
+                'chat_id' => $chatId,
+                'role' => 'user',
+                'content' => '🎬 [Video]',
+                'is_manual' => false,
+            ]);
+        } elseif (isset($message['animation']) && $shouldSaveMessage && ! $isFromOwner) {
+            ChatMessage::create([
+                'chat_id' => $chatId,
+                'role' => 'user',
+                'content' => '🎞 [GIF]',
+                'is_manual' => false,
+            ]);
+        } elseif (isset($message['sticker']) && $shouldSaveMessage && ! $isFromOwner) {
+            $stickerEmoji = $message['sticker']['emoji'] ?? '🎭';
+            ChatMessage::create([
+                'chat_id' => $chatId,
+                'role' => 'user',
+                'content' => "{$stickerEmoji} [Stiker]",
+                'is_manual' => false,
+            ]);
         }
 
         if ($isFromOwner) {
@@ -223,8 +252,16 @@ class TelegramWebhookController extends Controller
                 $this->sendMediaReply($chatId, $connectionId);
             }
 
-            // Stay silent for animations (GIFs), stickers, photos, and videos without captions
-            // to avoid annoying "I can't watch/listen" messages.
+            // Respond to stickers using the sticker's emoji as context
+            if ($isAiEnabled && isset($message['sticker'])) {
+                $stickerEmoji = $message['sticker']['emoji'] ?? '🎭';
+                $chatName = $this->resolveChatName($message['chat'] ?? []);
+                $this->debounceAiReply($chatId, $connectionId, "{$stickerEmoji} [Stiker]", $chatName);
+
+                return;
+            }
+
+            // Stay silent for animations (GIFs), photos, and videos without captions
             return;
         }
 

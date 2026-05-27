@@ -21,7 +21,8 @@ Shaxsiy Telegram akkauntingiz uchun "Raqamli Egizak" (Digital Twin). Siz band bo
     *   **AI Tushunishi:** AI ovozli xabar mazmunini o'qiy oladi va unga matnli javob qaytaradi.
     *   **Admin Panel:** Ovozli xabarlar transkripsiyasi admin panelda chat tarixida ko'rinadi.
 - **Granular Boshqaruv** — Har bir chat uchun AI javobini va o'rganish rejimini alohida yoqish/o'chirish imkoniyati. Masalan: sevgan insoningiz bilan chatda AIni o'chirib, faqat o'rganishni (Learn Mode) yoqib qo'yish mumkin.
-- **Media xabarlar bilan ishlash** — Ovozli xabar yoki video xabar (video note) kelganda "Hozir eshita olmayman/ko'ra olmayman" kabi tabiiy javoblar. GIF, sticker va oddiy rasmlar (caption'siz) emotsiya sifatida qabul qilinib, ularga xalaqit berilmaydi.
+- **Media xabarlar bilan ishlash** — Ovozli xabar yoki video xabar (video note) kelganda "Hozir eshita olmayman/ko'ra olmayman" kabi tabiiy javoblar. GIF va oddiy rasmlar (caption'siz) emotsiya sifatida qabul qilinib, ularga xalaqit berilmaydi. Media xabarlar chat tarixida belgi bilan saqlanadi: `😂 [Stiker]`, `🎬 [Video]`, `🎞 [GIF]`, `⭕ [Video xabar]`.
+    *   **Stiker javob** — Suhbatdosh stiker yuborganda AI stikerning emojisiga qarab javob beradi (masalan: `😂` → kulgili javob).
 - **Rasm va Video Caption** — Agar foydalanuvchi rasm yoki videoga izoh yozib yuborsa, AI o'sha matnni o'qib javob qaytaradi.
 - **Debounce & Context** — Ketma-ket kelgan xabarlarni bitta mazmunga birlashtirib, mantiqiy javob qaytarish.
 - **Chat Export (AI-Ready)** — Suhbat tarixini AI ga tayyor `.txt` formatda eksport qilish. Eksport faylda joriy persona, suhbat tarixi (`[USER]` / `[AI]` / `[AZIZBEK]` belgilari bilan) va persona yangilash ko'rsatmasi mavjud. Faylni istalgan AI ga (Claude, ChatGPT va h.k.) tashlasangiz, AI xatolarini tahlil qilib, personani yangilaydi.

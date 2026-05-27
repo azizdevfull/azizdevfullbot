@@ -9,12 +9,14 @@ use App\Models\ChatMessage;
 use App\Models\Persona;
 use App\Models\TelegramCommand;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminController extends Controller
 {
@@ -402,6 +404,124 @@ class AdminController extends Controller
         ChatLanguage::where('chat_id', $chatId)->update(['persona_id' => $data['persona_id']]);
 
         return back()->with('success', 'Chat personasi saqlandi.');
+    }
+
+    public function exportChat(Request $request, int $chatId): StreamedResponse
+    {
+        $language = ChatLanguage::with('persona')->where('chat_id', $chatId)->first();
+
+        if ($request->filled('last_n')) {
+            $messages = ChatMessage::where('chat_id', $chatId)
+                ->orderByDesc('id')
+                ->limit((int) $request->last_n)
+                ->get()
+                ->reverse()
+                ->values();
+        } else {
+            $query = ChatMessage::where('chat_id', $chatId)->orderBy('id');
+
+            if ($request->filled('from_date')) {
+                $query->whereDate('created_at', '>=', $request->from_date);
+            }
+
+            if ($request->filled('to_date')) {
+                $query->whereDate('created_at', '<=', $request->to_date);
+            }
+
+            $messages = $query->get();
+        }
+
+        $content = $this->buildExportContent($chatId, $language, $messages);
+        $filename = 'chat-export-'.$chatId.'-'.now()->format('Ymd-His').'.txt';
+
+        return response()->streamDownload(fn () => print ($content), $filename, [
+            'Content-Type' => 'text/plain; charset=utf-8',
+        ]);
+    }
+
+    /** @param Collection<int, ChatMessage> $messages */
+    private function buildExportContent(int $chatId, ?ChatLanguage $language, Collection $messages): string
+    {
+        $sep = str_repeat('=', 64);
+        $personaName = $language?->persona?->name ?? 'Biriktirilmagan';
+        $personaInstruction = $language?->persona?->prompt_instruction ?? null;
+
+        $meta = implode("\n", [
+            '  Suhbatdosh : '.($language?->chat_name ?? 'Noma\'lum'),
+            "  Chat ID    : {$chatId}",
+            '  Til        : '.($language?->language_name ?? '—').' ('.($language?->language_code ?? '—').')',
+            '  Murojat    : '.($language?->address_form ?? 'siz'),
+            "  Persona    : {$personaName}",
+            '  Eksport    : '.now()->format('Y-m-d H:i:s'),
+            '  Xabarlar   : '.$messages->count().' ta',
+        ]);
+
+        $history = '';
+        foreach ($messages as $msg) {
+            if ($msg->role === 'user') {
+                $label = '[USER]    ';
+            } elseif ($msg->is_manual) {
+                $label = '[AZIZBEK] ';
+            } else {
+                $label = '[AI]      ';
+            }
+            $history .= $label.' '.$msg->content."\n";
+        }
+
+        if (! $history) {
+            $history = "(Xabarlar topilmadi)\n";
+        }
+
+        $personaSection = $personaInstruction
+            ? $personaInstruction
+            : '(Persona biriktirilmagan — suhbat tarixini umumiy tahlil qiling)';
+
+        $instruction = $personaInstruction
+            ? implode("\n", [
+                '1. "[AI]" va "[AZIZBEK]" xabarlarini solishtiring',
+                "2. AI noto'g'ri javob bergan joylarni aniqlang",
+                "3. Persona qoidalarini shunga mos o'zgartiring",
+                '4. FAQAT yangilangan persona matnini qaytaring (boshqa izoh yozmang)',
+            ])
+            : implode("\n", [
+                '1. Suhbat uslubini tahlil qiling',
+                '2. Ushbu chat uchun yangi persona yarating',
+                '3. FAQAT persona matnini qaytaring (boshqa izoh yozmang)',
+            ]);
+
+        return <<<TXT
+        {$sep}
+        PERSONA YANGILASH UCHUN CHAT EKSPORT
+        {$sep}
+
+        VAZIFA:
+        Quyidagi suhbat tarixini tahlil qiling.
+        "[AI]"      — bot avtomatik yuborganlar (xato bo'lishi mumkin).
+        "[AZIZBEK]" — qo'lda yozilgan javoblar (to'g'ri namuna).
+        "[USER]"    — suhbatdosh xabarlari.
+        AI xatolarini aniqlang, persona qoidalarini shunga mos yangilang.
+        Javob faqat yangilangan persona matnidan iborat bo'lsin.
+
+        CHAT MA'LUMOTLARI:
+        {$meta}
+
+        {$sep}
+        JORIY PERSONA: "{$personaName}"
+        {$sep}
+
+        {$personaSection}
+
+        {$sep}
+        SUHBAT TARIXI
+        {$sep}
+
+        {$history}
+        {$sep}
+        KO'RSATMA
+        {$sep}
+
+        {$instruction}
+        TXT;
     }
 
     public function clearChatMessages(int $chatId): RedirectResponse

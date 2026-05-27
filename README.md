@@ -24,6 +24,10 @@ Shaxsiy Telegram akkauntingiz uchun "Raqamli Egizak" (Digital Twin). Siz band bo
 - **Media xabarlar bilan ishlash** — Ovozli xabar yoki video xabar (video note) kelganda "Hozir eshita olmayman/ko'ra olmayman" kabi tabiiy javoblar. GIF, sticker va oddiy rasmlar (caption'siz) emotsiya sifatida qabul qilinib, ularga xalaqit berilmaydi.
 - **Rasm va Video Caption** — Agar foydalanuvchi rasm yoki videoga izoh yozib yuborsa, AI o'sha matnni o'qib javob qaytaradi.
 - **Debounce & Context** — Ketma-ket kelgan xabarlarni bitta mazmunga birlashtirib, mantiqiy javob qaytarish.
+- **Chat Export (AI-Ready)** — Suhbat tarixini AI ga tayyor `.txt` formatda eksport qilish. Eksport faylda joriy persona, suhbat tarixi (`[USER]` / `[AI]` / `[AZIZBEK]` belgilari bilan) va persona yangilash ko'rsatmasi mavjud. Faylni istalgan AI ga (Claude, ChatGPT va h.k.) tashlasangiz, AI xatolarini tahlil qilib, personani yangilaydi.
+    *   **Oxirgi N ta xabar** — qo'lda son kiriting (masalan: 30).
+    *   **Sana oralig'i** — "Sana dan" va "Sana gacha" bilan filtrlash.
+    *   **`[AI]` va `[AZIZBEK]` belgilari** — AI avtomatik yuborganlar va siz qo'lda yozganlar alohida ko'rsatiladi, AI xato ustida ishlashi uchun.
 - **Admin Panel** — Chatlar tarixini kuzatish va kerak bo'lganda muloqotga o'zingiz aralashishingiz uchun qulay interfeys.
 
 ---
@@ -177,7 +181,7 @@ URL: `https://yourdomain.com/admin`
 | Bo'lim | Nima qiladi |
 |---|---|
 | **Business Ulanishlar** | Ulangan akkauntlarni ko'rish, yoqish/o'chirish |
-| **Chatlar** | Barcha faol muloqotlar ro'yxati, tarixi va har bir chat uchun AI/Learn toggle boshqaruvi |
+| **Chatlar** | Barcha faol muloqotlar ro'yxati, tarixi, AI/Learn toggle va AI-tayyor eksport |
 | **Chat Tillari** | Har chat uchun aniqlangan til, murojaat shakli, persona va AI/Learn holatini sozlash |
 | **Buyruqlar** | `/buyruq → javob` qo'shish va o'chirish |
 | **Ish Vaqti** | Soatlarni, timezone va tashqari javobni sozlash |

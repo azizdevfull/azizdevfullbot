@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div class="mb-6" x-data="{ showSettings: false }">
+<div class="mb-6" x-data="{ showSettings: false, showExport: false }">
     <div class="flex items-center justify-between gap-4">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.chats.index') }}" class="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:border-slate-300 transition shadow-sm">
@@ -29,6 +29,11 @@
             <button @click="showSettings = !showSettings" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition shadow-sm">
                 <svg class="w-4 h-4" :class="{ 'rotate-180': showSettings }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37a1.724 1.724 0 002.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 Sozlamalar
+            </button>
+
+            <button @click="showExport = !showExport; showSettings = false" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-100 text-sm font-semibold text-emerald-600 hover:bg-emerald-100 transition shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Eksport
             </button>
 
             @if ($language?->persona_id && $messages->where('is_manual', true)->count() >= 3)
@@ -169,6 +174,49 @@
                 <p class="mt-2 text-[10px] text-slate-400">Suhbatdoshga xos muloqot uslubini belgilash.</p>
             </div>
         </div>
+    </div>
+
+    {{-- Export panel --}}
+    <div x-show="showExport"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         class="mt-4 bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm overflow-hidden">
+
+        <div class="mb-4">
+            <h3 class="text-sm font-bold text-slate-700">AI-tayyor eksport</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Fayl yuklab olinadi. <span class="font-semibold text-slate-500">Oxirgi N ta</span> to'ldirilsa — sana filterlari e'tiborga olinmaydi.</p>
+        </div>
+
+        <form method="GET" action="{{ route('admin.chats.export', $chatId) }}" target="_blank"
+              class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Oxirgi N ta xabar</label>
+                <input type="number" name="last_n" min="1" placeholder="Bo'sh = hammasi"
+                       class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Sana dan</label>
+                <input type="date" name="from_date"
+                       class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">Sana gacha</label>
+                <input type="date" name="to_date"
+                       class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition">
+            </div>
+
+            <div>
+                <button type="submit"
+                        class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Yuklab olish
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 

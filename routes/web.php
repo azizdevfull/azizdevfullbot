@@ -53,6 +53,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('profile', [AdminController::class, 'profile'])->name('profile');
         Route::post('profile', [AdminController::class, 'updateProfile'])->name('profile.update');
 
+        Route::get('chats/{chatId}/export', [AdminController::class, 'exportChat'])->name('chats.export');
         Route::post('chats/{chatId}/clear', [AdminController::class, 'clearChatMessages'])->name('chats.clear');
         Route::delete('messages/{message}', [AdminController::class, 'destroyChatMessage'])->name('messages.destroy');
 

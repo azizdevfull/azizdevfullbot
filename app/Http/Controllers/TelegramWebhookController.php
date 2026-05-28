@@ -118,6 +118,13 @@ class TelegramWebhookController extends Controller
                 'content' => '🎤 [Ovozli xabar kutilmoqda...]',
                 'is_manual' => false,
             ]);
+        } elseif (isset($message['voice']) && $isLearningEnabled && $isFromOwner) {
+            ChatMessage::create([
+                'chat_id' => $chatId,
+                'role' => 'assistant',
+                'content' => '🎤 [Ovozli xabar]',
+                'is_manual' => true,
+            ]);
         } elseif (isset($message['video_note']) && $shouldSaveMessage && ! $isFromOwner) {
             ChatMessage::create([
                 'chat_id' => $chatId,

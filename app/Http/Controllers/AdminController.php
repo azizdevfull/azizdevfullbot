@@ -538,4 +538,44 @@ class AdminController extends Controller
 
         return back()->with('success', 'Xabar o\'chirildi.');
     }
+
+    public function sendChatMessage(Request $request, int $chatId)
+    {
+        $request->validate(['message' => 'required|string|max:4096']);
+
+        $text = $request->input('message');
+        $token = config('telegram.bot_token');
+
+        $connection = BusinessConnection::where('can_reply', true)
+            ->where('is_enabled', true)
+            ->first();
+
+        if (! $connection) {
+            return response()->json(['error' => 'Faol business connection topilmadi.'], 422);
+        }
+
+        $response = Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+            'chat_id' => $chatId,
+            'text' => $text,
+            'business_connection_id' => $connection->connection_id,
+            'parse_mode' => 'HTML',
+        ]);
+
+        if (! ($response->json('ok') ?? false)) {
+            return response()->json(['error' => 'Telegram xabar yuborishda xatolik.'], 500);
+        }
+
+        $message = ChatMessage::create([
+            'chat_id' => $chatId,
+            'role' => 'assistant',
+            'content' => $text,
+            'is_manual' => true,
+        ]);
+
+        return response()->json([
+            'id' => $message->id,
+            'content' => $message->content,
+            'created_at' => $message->created_at->toISOString(),
+        ]);
+    }
 }

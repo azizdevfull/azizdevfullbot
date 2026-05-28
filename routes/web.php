@@ -55,6 +55,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('chats/{chatId}/export', [AdminController::class, 'exportChat'])->name('chats.export');
         Route::post('chats/{chatId}/clear', [AdminController::class, 'clearChatMessages'])->name('chats.clear');
+        Route::post('chats/{chatId}/send', [AdminController::class, 'sendChatMessage'])->name('chats.send');
         Route::delete('messages/{message}', [AdminController::class, 'destroyChatMessage'])->name('messages.destroy');
 
         Route::post('learn/{chatId}/analyze', [LearnController::class, 'analyze'])->name('learn.analyze');

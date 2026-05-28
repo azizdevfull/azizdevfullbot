@@ -278,19 +278,100 @@
         </div>
     </div>
 
-    {{-- Info footer --}}
-    <div class="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span class="text-xs font-medium text-slate-500">Bot faol holatda</span>
-        </div>
-        <p class="text-[10px] text-slate-400 font-medium uppercase tracking-wider" id="message-count">
-            Oxirgi 50 ta xabar
-        </p>
+    {{-- Send message footer --}}
+    <div class="px-4 py-3 bg-white border-t border-slate-100" x-data="sendMessage({{ $chatId }})">
+        <form @submit.prevent="send" class="flex items-end gap-3">
+            <textarea
+                x-model="text"
+                @keydown.enter.prevent="if (!$event.shiftKey) send()"
+                rows="1"
+                placeholder="Xabar yozing... (Enter — yuborish, Shift+Enter — yangi qator)"
+                class="flex-1 resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition max-h-32 overflow-y-auto"
+                style="min-height: 42px;"
+                @input="autoResize($el)"
+            ></textarea>
+            <button
+                type="submit"
+                :disabled="sending || !text.trim()"
+                class="flex-shrink-0 w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+                <svg x-show="!sending" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                <svg x-show="sending" class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </button>
+        </form>
+        <p x-show="error" x-text="error" class="mt-1.5 text-xs text-red-500 px-1"></p>
     </div>
 </div>
 
 <script>
+function sendMessage(chatId) {
+    return {
+        text: '',
+        sending: false,
+        error: '',
+
+        async send() {
+            if (!this.text.trim() || this.sending) return;
+            this.sending = true;
+            this.error = '';
+
+            try {
+                const res = await fetch(`/admin/chats/${chatId}/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({ message: this.text.trim() }),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    this.error = data.error ?? 'Xabar yuborishda xatolik.';
+                    return;
+                }
+
+                const container = document.getElementById('message-container');
+                const wrapper = document.getElementById('messages-wrapper');
+
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message-item flex justify-end group';
+                msgDiv.dataset.id = data.id;
+
+                const time = new Date(data.created_at).toLocaleTimeString('uz-UZ', {hour: '2-digit', minute: '2-digit'});
+                const escaped = data.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+                msgDiv.innerHTML = `
+                    <div class="max-w-[85%] sm:max-w-[70%] relative">
+                        <div class="flex items-end gap-2 flex-row-reverse">
+                            <div class="relative px-4 py-3 rounded-2xl text-sm shadow-sm bg-indigo-600 text-white rounded-br-none shadow-indigo-100">
+                                <div class="whitespace-pre-wrap break-words">${escaped}</div>
+                            </div>
+                            <span class="text-[10px] text-slate-300 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-1">${time}</span>
+                        </div>
+                    </div>
+                `;
+
+                wrapper.appendChild(msgDiv);
+                container.scrollTop = container.scrollHeight;
+
+                this.text = '';
+                this.$nextTick(() => this.autoResize(this.$el.querySelector('textarea')));
+            } catch {
+                this.error = 'Tarmoq xatoligi.';
+            } finally {
+                this.sending = false;
+            }
+        },
+
+        autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 128) + 'px';
+        },
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('message-container');
     const wrapper = document.getElementById('messages-wrapper');

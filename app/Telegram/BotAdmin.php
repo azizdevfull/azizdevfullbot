@@ -13,24 +13,26 @@ class BotAdmin
 {
     private string $token;
 
-    public function __construct(private readonly int|string $chatId)
-    {
+    public function __construct(
+        private readonly int|string $chatId,
+        private readonly ?int $messageId = null
+    ) {
         $this->token = config('telegram.bot_token');
     }
 
-    public function handle(string $text): void
+    public function handle(string $text, bool $isCallback = false): void
     {
         $waitingKey = "bot_admin_waiting_{$this->chatId}";
         $waiting = Cache::get($waitingKey);
 
-        if ($waiting && ! str_starts_with($text, '/')) {
+        if ($waiting && ! str_starts_with($text, '/') && ! $isCallback) {
             Cache::forget($waitingKey);
             $this->handleWaitingInput($waiting, $text);
 
             return;
         }
 
-        if (! str_starts_with($text, '/')) {
+        if (! str_starts_with($text, '/') && ! $isCallback) {
             return;
         }
 
@@ -39,7 +41,7 @@ class BotAdmin
         $args = trim($parts[1] ?? '');
 
         match ($command) {
-            'start', 'status' => $this->showStatus(),
+            'start', 'status', 'menu' => $this->showStatus(),
             'ai' => $this->toggleAi(),
             'memode' => $this->toggleGlobalMeMode(),
             'hours' => $this->handleHours($args),
@@ -53,6 +55,9 @@ class BotAdmin
             'langset' => $this->setChatLanguage($args),
             'langreset' => $this->resetChatLanguage($args),
             'address' => $this->setAddressForm($args),
+            'chat' => $this->showChatSettings($args),
+            'chatai' => $this->toggleChatAi($args),
+            'chatlearn' => $this->toggleChatLearning($args),
             'prompt' => $this->startWaiting('ai_prompt', "✍️ Yangi <b>AI instructions</b> yuboring:\n\n<i>Bekor qilish: /cancel</i>"),
             'meprompt' => $this->startWaiting('me_prompt', "🎭 Yangi <b>Me Mode instructions</b> yuboring:\n\n<i>Bekor qilish: /cancel</i>"),
             'cancel' => $this->cancelWaiting(),
@@ -81,6 +86,32 @@ class BotAdmin
         $cmdCount = TelegramCommand::count();
         $connCount = BusinessConnection::where('is_enabled', true)->count();
 
+        $buttons = [
+            [
+                ['text' => ($aiEnabled ? '🔴 AI Off' : '🟢 AI On'), 'callback_data' => 'ai'],
+                ['text' => ($meModeGlobal ? '⚫ Me Off' : '🟢 Me On'), 'callback_data' => 'memode'],
+            ],
+            [
+                ['text' => '⏰ Ish vaqti', 'callback_data' => 'hours'],
+                ['text' => '⏱ Debounce', 'callback_data' => 'debounce'],
+            ],
+            [
+                ['text' => '📝 Buyruqlar', 'callback_data' => 'cmds'],
+                ['text' => '🔗 Ulanishlar', 'callback_data' => 'connections'],
+            ],
+            [
+                ['text' => '🌐 Tillari', 'callback_data' => 'langlist'],
+                ['text' => '💬 Fallback', 'callback_data' => 'fallback'],
+            ],
+            [
+                ['text' => '✍️ AI Prompt', 'callback_data' => 'prompt'],
+                ['text' => '🎭 Me Prompt', 'callback_data' => 'meprompt'],
+            ],
+            [
+                ['text' => '🔄 Yangilash', 'callback_data' => 'status'],
+            ],
+        ];
+
         $this->send(
             "📊 <b>Bot holati</b>\n\n"
             .($aiEnabled ? '🟢' : '🔴').' AI: '.($aiEnabled ? 'Yoqiq' : "O'chiq")."\n"
@@ -88,23 +119,8 @@ class BotAdmin
             .($hoursEnabled ? '🟢' : '⚫').' Ish vaqti: '.($hoursEnabled ? "{$hoursStart}–{$hoursEnd} ({$timezone})" : "O'chiq")."\n"
             ."⏱ Debounce: {$debounce}s\n"
             ."📝 Buyruqlar: {$cmdCount} ta\n"
-            ."🔗 Ulanishlar: {$connCount} ta faol\n\n"
-            ."<b>Buyruqlar:</b>\n"
-            ."/ai — AI on/off\n"
-            ."/memode — Global Me Mode\n"
-            ."/hours — Ish vaqti\n"
-            ."/cmds — Buyruqlar ro'yxati\n"
-            ."/addcmd — Buyruq qo'shish\n"
-            ."/delcmd — Buyruq o'chirish\n"
-            ."/prompt — AI instructions\n"
-            ."/meprompt — Me Mode instructions\n"
-            ."/fallback — Fallback javob\n"
-            ."/debounce — Debounce soniyasi\n"
-            ."/connections — Business ulanishlar\n"
-            ."/langlist — Chat tillari\n"
-            ."/langset {id} {kod} — Til belgilash\n"
-            ."/langreset {id} — Avtoga qaytarish\n"
-            .'/address {id} siz|sen — Murojat shakli'
+            ."🔗 Ulanishlar: {$connCount} ta faol",
+            ['inline_keyboard' => $buttons]
         );
     }
 
@@ -112,30 +128,28 @@ class BotAdmin
     {
         $current = BotSetting::get('ai_enabled', '1') === '1';
         BotSetting::set('ai_enabled', $current ? '0' : '1');
-        $this->send($current ? "🔴 AI <b>o'chirildi</b>" : '🟢 AI <b>yoqildi</b>');
+        $this->showStatus();
     }
 
     private function toggleGlobalMeMode(): void
     {
         $current = BotSetting::get('me_mode_global', '0') === '1';
         BotSetting::set('me_mode_global', $current ? '0' : '1');
-        $this->send($current
-            ? "⚫ Global Me Mode <b>o'chirildi</b>"
-            : "🟢 Global Me Mode <b>yoqildi</b> — barcha chatlarda siz bo'lib yozadi.");
+        $this->showStatus();
     }
 
     private function handleHours(string $args): void
     {
         if ($args === 'on') {
             BotSetting::set('working_hours_enabled', '1');
-            $this->send('🟢 Ish vaqti <b>yoqildi</b>');
+            $this->handleHours('');
 
             return;
         }
 
         if ($args === 'off') {
             BotSetting::set('working_hours_enabled', '0');
-            $this->send("⚫ Ish vaqti <b>o'chirildi</b>");
+            $this->handleHours('');
 
             return;
         }
@@ -147,7 +161,7 @@ class BotAdmin
         ) {
             BotSetting::set('working_hours_start', $parts[0]);
             BotSetting::set('working_hours_end', $parts[1]);
-            $this->send("⏰ Ish vaqti: <b>{$parts[0]}–{$parts[1]}</b>");
+            $this->handleHours('');
 
             return;
         }
@@ -158,13 +172,23 @@ class BotAdmin
         $tz = BotSetting::get('working_hours_timezone', 'Asia/Tashkent');
         $msg = BotSetting::get('working_hours_message', '');
 
+        $buttons = [
+            [
+                ['text' => ($enabled ? '⚫ O\'chirish' : '🟢 Yoqish'), 'callback_data' => 'hours '.($enabled ? 'off' : 'on')],
+            ],
+            [
+                ['text' => '🔙 Orqaga', 'callback_data' => 'status'],
+            ],
+        ];
+
         $this->send(
             "⏰ <b>Ish vaqti</b>\n\n"
             .'Holat: '.($enabled ? '🟢 Yoqiq' : "⚫ O'chiq")."\n"
             ."Vaqt: {$start}–{$end}\n"
             ."Timezone: {$tz}\n"
             ."Tashqari javob: {$msg}\n\n"
-            ."<i>/hours on|off\n/hours 09:00 18:00</i>"
+            ."<i>Vaqtni o'zgartirish: /hours 09:00 18:00</i>",
+            ['inline_keyboard' => $buttons]
         );
     }
 
@@ -172,40 +196,60 @@ class BotAdmin
     {
         if (empty($text)) {
             $current = BotSetting::get('fallback_reply', '');
-            $this->send("💬 Hozirgi fallback:\n<i>{$current}</i>\n\n<i>/fallback Yangi matn</i>");
+            $this->send(
+                "💬 Hozirgi fallback:\n<i>{$current}</i>\n\n<i>O'zgartirish: /fallback Yangi matn</i>",
+                ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'status']]]]
+            );
 
             return;
         }
 
         BotSetting::set('fallback_reply', $text);
-        $this->send("💬 Fallback saqlandi:\n<i>{$text}</i>");
+        $this->send(
+            "💬 Fallback saqlandi:\n<i>{$text}</i>",
+            ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'status']]]]
+        );
     }
 
     private function setDebounce(string $args): void
     {
         if (! is_numeric($args) || (int) $args < 1 || (int) $args > 30) {
             $current = BotSetting::get('debounce_seconds', '3');
-            $this->send("⏱ Hozirgi debounce: <b>{$current}s</b>\n\n<i>/debounce 5</i>");
+            $this->send(
+                "⏱ Hozirgi debounce: <b>{$current}s</b>\n\n<i>O'zgartirish: /debounce 5</i>",
+                ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'status']]]]
+            );
 
             return;
         }
 
         BotSetting::set('debounce_seconds', (string) (int) $args);
-        $this->send("⏱ Debounce: <b>{$args}s</b>");
+        $this->send(
+            "⏱ Debounce: <b>{$args}s</b>",
+            ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'status']]]]
+        );
     }
 
     private function listCommands(): void
     {
         $commands = TelegramCommand::orderBy('command')->get();
 
+        $buttons = [[['text' => '🔙 Orqaga', 'callback_data' => 'status']]];
+
         if ($commands->isEmpty()) {
-            $this->send("📝 Buyruqlar yo'q.\n\n<i>/addcmd salom Salom! 👋</i>");
+            $this->send(
+                "📝 Buyruqlar yo'q.\n\n<i>Qo'shish: /addcmd buyruq javob</i>",
+                ['inline_keyboard' => $buttons]
+            );
 
             return;
         }
 
         $list = $commands->map(fn ($c) => "/{$c->command} — {$c->reply}")->implode("\n");
-        $this->send("📝 <b>Buyruqlar ({$commands->count()} ta)</b>\n\n{$list}\n\n<i>O'chirish: /delcmd buyruq_nomi</i>");
+        $this->send(
+            "📝 <b>Buyruqlar ({$commands->count()} ta)</b>\n\n{$list}\n\n<i>O'chirish: /delcmd nom</i>",
+            ['inline_keyboard' => $buttons]
+        );
     }
 
     private function addCommand(string $args): void
@@ -213,7 +257,10 @@ class BotAdmin
         $parts = explode(' ', $args, 2);
 
         if (count($parts) < 2 || empty($parts[0]) || empty($parts[1])) {
-            $this->send("❌ Format: /addcmd <b>buyruq</b> javob matni\n\nMisol: /addcmd salom Salom! 👋");
+            $this->send(
+                '❌ Format: /addcmd <b>buyruq</b> javob matni',
+                ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'cmds']]]]
+            );
 
             return;
         }
@@ -222,7 +269,10 @@ class BotAdmin
         $reply = $parts[1];
 
         TelegramCommand::updateOrCreate(['command' => $command], ['reply' => $reply]);
-        $this->send("✅ <b>/{$command}</b> qo'shildi:\n<i>{$reply}</i>");
+        $this->send(
+            "✅ <b>/{$command}</b> qo'shildi:\n<i>{$reply}</i>",
+            ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'cmds']]]]
+        );
     }
 
     private function deleteCommand(string $args): void
@@ -230,21 +280,29 @@ class BotAdmin
         $command = strtolower(trim($args));
 
         if (empty($command)) {
-            $this->send('❌ Format: /delcmd <b>buyruq_nomi</b>');
+            $this->send(
+                '❌ Format: /delcmd <b>buyruq_nomi</b>',
+                ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'cmds']]]]
+            );
 
             return;
         }
 
         $deleted = TelegramCommand::where('command', $command)->delete();
-        $this->send($deleted ? "✅ <b>/{$command}</b> o'chirildi" : "⚠️ /{$command} topilmadi");
+        $this->send(
+            $deleted ? "✅ <b>/{$command}</b> o'chirildi" : "⚠️ /{$command} topilmadi",
+            ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'cmds']]]]
+        );
     }
 
     private function listConnections(): void
     {
         $connections = BusinessConnection::all();
 
+        $buttons = [[['text' => '🔙 Orqaga', 'callback_data' => 'status']]];
+
         if ($connections->isEmpty()) {
-            $this->send("🔗 Business ulanishlar yo'q.");
+            $this->send("🔗 Business ulanishlar yo'q.", ['inline_keyboard' => $buttons]);
 
             return;
         }
@@ -254,25 +312,91 @@ class BotAdmin
             .'   Javob huquqi: '.($c->can_reply ? 'ha' : "yo'q")
         )->implode("\n\n");
 
-        $this->send("🔗 <b>Business Ulanishlar</b>\n\n{$list}");
+        $this->send("🔗 <b>Business Ulanishlar</b>\n\n{$list}", ['inline_keyboard' => $buttons]);
     }
 
     private function listChatLanguages(): void
     {
-        $langs = ChatLanguage::orderByDesc('updated_at')->get();
+        $langs = ChatLanguage::orderByDesc('updated_at')->limit(15)->get();
+
+        $buttons = [];
+        foreach ($langs as $lang) {
+            $name = $lang->chat_name ?: "Chat {$lang->chat_id}";
+            $buttons[] = [['text' => "👤 {$name}", 'callback_data' => "chat {$lang->chat_id}"]];
+        }
+
+        $buttons[] = [['text' => '🔙 Orqaga', 'callback_data' => 'status']];
 
         if ($langs->isEmpty()) {
-            $this->send('🌐 Hali hech qanday chat tili aniqlanmagan.');
+            $this->send('🌐 Hali hech qanday chat tili aniqlanmagan.', ['inline_keyboard' => [['text' => '🔙 Orqaga', 'callback_data' => 'status']]]);
 
             return;
         }
 
-        $list = $langs->map(fn ($l) => ($l->is_manual ? '✎' : '⟳')
-            ." <b>{$l->chat_name}</b> (<code>{$l->chat_id}</code>)"
-            ."\n   → {$l->language_name} [{$l->language_code}]"
-        )->implode("\n\n");
+        $this->send(
+            "🌐 <b>Chatlar ro'yxati (oxirgi 15)</b>\n\nBatafsil sozlash uchun chat ustiga bosing:",
+            ['inline_keyboard' => $buttons]
+        );
+    }
 
-        $this->send("🌐 <b>Chat Tillari</b>\n\n{$list}\n\n<i>/langset {chat_id} kk\n/langreset {chat_id}</i>");
+    private function showChatSettings(string $args): void
+    {
+        $chatId = (int) trim($args);
+        $chat = ChatLanguage::forChat($chatId);
+
+        if (! $chat) {
+            $this->send('⚠️ Chat topilmadi.', ['inline_keyboard' => [[['text' => '🔙 Ro\'yxatga', 'callback_data' => 'langlist']]]]);
+
+            return;
+        }
+
+        $aiEnabled = $chat->ai_enabled ?? true;
+        $learningEnabled = $chat->learning_enabled ?? true;
+
+        $buttons = [
+            [
+                ['text' => ($aiEnabled ? '🔴 Chat AI Off' : '🟢 Chat AI On'), 'callback_data' => "chatai {$chatId}"],
+                ['text' => ($learningEnabled ? '⚫ Learn Off' : '🟢 Learn On'), 'callback_data' => "chatlearn {$chatId}"],
+            ],
+            [
+                ['text' => '🌐 Til: '.strtoupper($chat->language_code), 'callback_data' => "chat_lang_menu {$chatId}"], // Placeholder
+                ['text' => '👤 '.ucfirst($chat->address_form), 'callback_data' => "chat_address_menu {$chatId}"], // Placeholder
+            ],
+            [
+                ['text' => '🔙 Ro\'yxatga', 'callback_data' => 'langlist'],
+            ],
+        ];
+
+        $this->send(
+            "👤 <b>Chat sozlamalari</b>\n\n"
+            ."Nomi: <b>{$chat->chat_name}</b>\n"
+            ."ID: <code>{$chat->chat_id}</code>\n"
+            ."Tili: {$chat->language_name} [{$chat->language_code}]\n"
+            ."Murojaat: {$chat->address_form}\n\n"
+            .($aiEnabled ? '🟢' : '🔴').' AI Javob: '.($aiEnabled ? 'Yoqiq' : 'O\'chiq')."\n"
+            .($learningEnabled ? '🟢' : '⚫')." O'rganish: ".($learningEnabled ? 'Yoqiq' : 'O\'chiq'),
+            ['inline_keyboard' => $buttons]
+        );
+    }
+
+    private function toggleChatAi(string $args): void
+    {
+        $chatId = (int) trim($args);
+        $chat = ChatLanguage::forChat($chatId);
+        if ($chat) {
+            $chat->update(['ai_enabled' => ! ($chat->ai_enabled ?? true)]);
+            $this->showChatSettings((string) $chatId);
+        }
+    }
+
+    private function toggleChatLearning(string $args): void
+    {
+        $chatId = (int) trim($args);
+        $chat = ChatLanguage::forChat($chatId);
+        if ($chat) {
+            $chat->update(['learning_enabled' => ! ($chat->learning_enabled ?? true)]);
+            $this->showChatSettings((string) $chatId);
+        }
     }
 
     private function setChatLanguage(string $args): void
@@ -280,7 +404,10 @@ class BotAdmin
         $parts = explode(' ', trim($args), 2);
 
         if (count($parts) < 2 || ! is_numeric($parts[0])) {
-            $this->send("❌ Format: /langset <b>chat_id</b> <b>kod</b>\n\nKodlar: uz, kk, ru, en, tr, ar");
+            $this->send(
+                '❌ Format: /langset <b>chat_id</b> <b>kod</b>',
+                ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'langlist']]]]
+            );
 
             return;
         }
@@ -291,13 +418,19 @@ class BotAdmin
         $names = ['uz' => "O'zbek", 'kk' => 'Qazaq', 'ru' => 'Русский', 'en' => 'English', 'tr' => 'Türkçe', 'ar' => 'العربية'];
 
         if (! isset($names[$code])) {
-            $this->send("❌ Noma'lum til kodi: <code>{$code}</code>\n\nMavjud: ".implode(', ', array_keys($names)));
+            $this->send(
+                "❌ Noma'lum til kodi: <code>{$code}</code>",
+                ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'langlist']]]]
+            );
 
             return;
         }
 
         ChatLanguage::setForChat($chatId, $code, $names[$code], true);
-        $this->send("✅ <code>{$chatId}</code> → <b>{$names[$code]}</b> [{$code}] (qo'lda)");
+        $this->send(
+            "✅ <code>{$chatId}</code> → <b>{$names[$code]}</b> [{$code}]",
+            ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'langlist']]]]
+        );
     }
 
     private function resetChatLanguage(string $args): void
@@ -305,13 +438,19 @@ class BotAdmin
         $chatId = (int) trim($args);
 
         if (! $chatId) {
-            $this->send('❌ Format: /langreset <b>chat_id</b>');
+            $this->send(
+                '❌ Format: /langreset <b>chat_id</b>',
+                ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'langlist']]]]
+            );
 
             return;
         }
 
         ChatLanguage::where('chat_id', $chatId)->update(['is_manual' => false]);
-        $this->send("⟳ <code>{$chatId}</code> avtomatik aniqlanishga qaytarildi.");
+        $this->send(
+            "⟳ <code>{$chatId}</code> avtoga qaytarildi.",
+            ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'langlist']]]]
+        );
     }
 
     private function setAddressForm(string $args): void
@@ -319,7 +458,10 @@ class BotAdmin
         $parts = explode(' ', trim($args), 2);
 
         if (count($parts) < 2 || ! is_numeric($parts[0]) || ! in_array($parts[1], ['siz', 'sen'])) {
-            $this->send('❌ Format: /address <b>chat_id</b> <b>siz|sen</b>');
+            $this->send(
+                '❌ Format: /address <b>chat_id</b> <b>siz|sen</b>',
+                ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'langlist']]]]
+            );
 
             return;
         }
@@ -328,39 +470,53 @@ class BotAdmin
         $form = $parts[1];
 
         ChatLanguage::where('chat_id', $chatId)->update(['address_form' => $form]);
-        $this->send("✅ <code>{$chatId}</code> → murojat shakli: <b>{$form}</b>");
+        $this->send(
+            "✅ <code>{$chatId}</code> → <b>{$form}</b>",
+            ['inline_keyboard' => [[['text' => '🔙 Orqaga', 'callback_data' => 'langlist']]]]
+        );
     }
 
     private function startWaiting(string $type, string $prompt): void
     {
         Cache::put("bot_admin_waiting_{$this->chatId}", $type, now()->addMinutes(10));
-        $this->send($prompt);
+        $this->send($prompt, ['inline_keyboard' => [[['text' => '❌ Bekor qilish', 'callback_data' => 'cancel']]]]);
     }
 
     private function cancelWaiting(): void
     {
         Cache::forget("bot_admin_waiting_{$this->chatId}");
-        $this->send('❌ Bekor qilindi.');
+        $this->send('❌ Bekor qilindi.', ['inline_keyboard' => [[['text' => '🔙 Menyu', 'callback_data' => 'status']]]]);
     }
 
     private function saveAiPrompt(string $text): void
     {
         BotSetting::set('ai_instructions', $text);
-        $this->send('✅ AI instructions saqlandi.');
+        $this->send('✅ AI instructions saqlandi.', ['inline_keyboard' => [[['text' => '🔙 Menyu', 'callback_data' => 'status']]]]);
     }
 
     private function saveMePrompt(string $text): void
     {
         BotSetting::set('me_mode_instructions', $text);
-        $this->send('✅ Me Mode instructions saqlandi.');
+        $this->send('✅ Me Mode instructions saqlandi.', ['inline_keyboard' => [[['text' => '🔙 Menyu', 'callback_data' => 'status']]]]);
     }
 
-    private function send(string $text): void
+    private function send(string $text, ?array $replyMarkup = null): void
     {
-        Http::post("https://api.telegram.org/bot{$this->token}/sendMessage", [
+        $endpoint = $this->messageId ? 'editMessageText' : 'sendMessage';
+        $params = [
             'chat_id' => $this->chatId,
             'text' => $text,
             'parse_mode' => 'HTML',
-        ]);
+        ];
+
+        if ($this->messageId) {
+            $params['message_id'] = $this->messageId;
+        }
+
+        if ($replyMarkup) {
+            $params['reply_markup'] = json_encode($replyMarkup);
+        }
+
+        Http::post("https://api.telegram.org/bot{$this->token}/{$endpoint}", $params);
     }
 }

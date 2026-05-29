@@ -25,6 +25,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware('admin.auth')->group(function () {
         Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('stats', [AdminController::class, 'stats'])->name('stats.index');
 
         Route::get('connections', [AdminController::class, 'connections'])->name('connections.index');
         Route::post('connections/{connection}/toggle', [AdminController::class, 'toggleConnection'])->name('connections.toggle');

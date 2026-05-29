@@ -5,8 +5,10 @@ namespace App\Telegram;
 use App\Models\BotSetting;
 use App\Models\BusinessConnection;
 use App\Models\ChatLanguage;
+use App\Models\ChatMessage;
 use App\Models\TelegramCommand;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class BotAdmin
@@ -58,6 +60,7 @@ class BotAdmin
             'chat' => $this->showChatSettings($args),
             'chatai' => $this->toggleChatAi($args),
             'chatlearn' => $this->toggleChatLearning($args),
+            'stats' => $this->showStats(),
             'prompt' => $this->startWaiting('ai_prompt', "✍️ Yangi <b>AI instructions</b> yuboring:\n\n<i>Bekor qilish: /cancel</i>"),
             'meprompt' => $this->startWaiting('me_prompt', "🎭 Yangi <b>Me Mode instructions</b> yuboring:\n\n<i>Bekor qilish: /cancel</i>"),
             'cancel' => $this->cancelWaiting(),
@@ -96,12 +99,12 @@ class BotAdmin
                 ['text' => '⏱ Debounce', 'callback_data' => 'debounce'],
             ],
             [
+                ['text' => '📊 Statistika', 'callback_data' => 'stats'],
                 ['text' => '📝 Buyruqlar', 'callback_data' => 'cmds'],
-                ['text' => '🔗 Ulanishlar', 'callback_data' => 'connections'],
             ],
             [
+                ['text' => '🔗 Ulanishlar', 'callback_data' => 'connections'],
                 ['text' => '🌐 Tillari', 'callback_data' => 'langlist'],
-                ['text' => '💬 Fallback', 'callback_data' => 'fallback'],
             ],
             [
                 ['text' => '✍️ AI Prompt', 'callback_data' => 'prompt'],
@@ -120,6 +123,53 @@ class BotAdmin
             ."⏱ Debounce: {$debounce}s\n"
             ."📝 Buyruqlar: {$cmdCount} ta\n"
             ."🔗 Ulanishlar: {$connCount} ta faol",
+            ['inline_keyboard' => $buttons]
+        );
+    }
+
+    private function showStats(): void
+    {
+        $today = now()->startOfDay();
+
+        $aiReplies = ChatMessage::where('role', 'assistant')
+            ->where('is_manual', false)
+            ->where('created_at', '>=', $today)
+            ->count();
+
+        $manualReplies = ChatMessage::where('role', 'assistant')
+            ->where('is_manual', true)
+            ->where('created_at', '>=', $today)
+            ->count();
+
+        $userMessages = ChatMessage::where('role', 'user')
+            ->where('created_at', '>=', $today)
+            ->count();
+
+        $voiceMessages = ChatMessage::where('role', 'user')
+            ->where('content', 'like', '%🎤 [Ovozli xabar%')
+            ->where('created_at', '>=', $today)
+            ->count();
+
+        $topLangs = ChatLanguage::select('language_code', DB::raw('count(*) as count'))
+            ->groupBy('language_code')
+            ->orderByDesc('count')
+            ->limit(3)
+            ->get();
+
+        $langStats = $topLangs->map(fn ($l) => strtoupper($l->language_code).": {$l->count} ta")->implode("\n");
+
+        $buttons = [
+            [['text' => '🔄 Yangilash', 'callback_data' => 'stats']],
+            [['text' => '🔙 Orqaga', 'callback_data' => 'status']],
+        ];
+
+        $this->send(
+            "📊 <b>Bugungi statistika</b>\n\n"
+            ."🤖 AI javoblari: <b>{$aiReplies}</b>\n"
+            ."👤 Sizning javoblaringiz: <b>{$manualReplies}</b>\n"
+            ."📩 Foydalanuvchi xabarlari: <b>{$userMessages}</b>\n"
+            ."🎤 Ovozli xabarlar: <b>{$voiceMessages}</b>\n\n"
+            ."🌐 <b>Top tillar:</b>\n".($langStats ?: "Ma'lumot yo'q"),
             ['inline_keyboard' => $buttons]
         );
     }

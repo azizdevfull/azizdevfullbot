@@ -33,9 +33,30 @@ class TelegramWebhookController extends Controller
             $this->handleBusinessMessage($update['business_message']);
         } elseif (isset($update['message'])) {
             $this->handleDirectMessage($update['message']);
+        } elseif (isset($update['callback_query'])) {
+            $this->handleCallbackQuery($update['callback_query']);
         }
 
         return response('OK');
+    }
+
+    private function handleCallbackQuery(array $callbackQuery): void
+    {
+        $chatId = $callbackQuery['message']['chat']['id'] ?? null;
+        $messageId = $callbackQuery['message']['message_id'] ?? null;
+        $data = $callbackQuery['data'] ?? '';
+
+        if (! $chatId || empty($data)) {
+            return;
+        }
+
+        // Answer callback query to stop loading state in Telegram
+        $token = config('telegram.bot_token');
+        Http::post("https://api.telegram.org/bot{$token}/answerCallbackQuery", [
+            'callback_query_id' => $callbackQuery['id'],
+        ]);
+
+        (new BotAdmin($chatId, $messageId))->handle($data, true);
     }
 
     private function handleBusinessConnection(array $data): void

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
@@ -97,13 +98,90 @@ class AdminController extends Controller
 
     public function dashboard(): View
     {
+        $today = now()->startOfDay();
+
         return view('admin.dashboard', [
             'connectionsCount' => BusinessConnection::count(),
             'chatsCount' => ChatLanguage::count(),
             'commandsCount' => TelegramCommand::count(),
             'aiEnabled' => BotSetting::get('ai_enabled', '1') === '1',
             'workingHoursEnabled' => BotSetting::get('working_hours_enabled', '0') === '1',
+            'todayMessages' => ChatMessage::where('created_at', '>=', $today)->count(),
+            'todayAiReplies' => ChatMessage::where('role', 'assistant')->where('is_manual', false)->where('created_at', '>=', $today)->count(),
+            'recentLogs' => $this->getRecentLogs(5),
         ]);
+    }
+
+    public function stats(): View
+    {
+        $today = now()->startOfDay();
+        $sevenDaysAgo = now()->subDays(7)->startOfDay();
+
+        // General stats
+        $totalMessages = ChatMessage::count();
+        $totalAiReplies = ChatMessage::where('role', 'assistant')->where('is_manual', false)->count();
+        $totalManualReplies = ChatMessage::where('role', 'assistant')->where('is_manual', true)->count();
+        $totalVoiceMessages = ChatMessage::where('content', 'like', '%🎤 [Ovozli xabar%')->count();
+
+        // Today's stats
+        $todayStats = [
+            'total' => ChatMessage::where('created_at', '>=', $today)->count(),
+            'ai' => ChatMessage::where('role', 'assistant')->where('is_manual', false)->where('created_at', '>=', $today)->count(),
+            'user' => ChatMessage::where('role', 'user')->where('created_at', '>=', $today)->count(),
+            'voice' => ChatMessage::where('role', 'user')->where('content', 'like', '%🎤 [Ovozli xabar%')->where('created_at', '>=', $today)->count(),
+        ];
+
+        // Chart data: Messages per day (last 7 days)
+        $dailyStats = ChatMessage::selectRaw('DATE(created_at) as date, count(*) as count')
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // Language distribution
+        $langStats = ChatLanguage::select('language_code', DB::raw('count(*) as count'))
+            ->groupBy('language_code')
+            ->orderByDesc('count')
+            ->get();
+
+        return view('admin.stats', compact(
+            'totalMessages', 'totalAiReplies', 'totalManualReplies', 'totalVoiceMessages',
+            'todayStats', 'dailyStats', 'langStats'
+        ));
+    }
+
+    private function getRecentLogs(int $limit = 10): array
+    {
+        $logFile = storage_path('logs/laravel.log');
+        if (! file_exists($logFile)) {
+            return [];
+        }
+
+        $logs = [];
+        $handle = fopen($logFile, 'r');
+        $lines = [];
+
+        // Simple way to get last N lines
+        while (($line = fgets($handle)) !== false) {
+            if (str_contains($line, 'telegram')) { // Focus on telegram logs
+                $lines[] = $line;
+            }
+        }
+        fclose($handle);
+
+        $recent = array_slice(array_reverse($lines), 0, $limit);
+
+        return array_map(function ($line) {
+            // Basic parsing of Laravel log format
+            preg_match('/\[(.*?)\] (.*?)\.(.*?): (.*)/', $line, $matches);
+
+            return [
+                'time' => $matches[1] ?? now()->format('Y-m-d H:i:s'),
+                'env' => $matches[2] ?? 'local',
+                'level' => $matches[3] ?? 'INFO',
+                'message' => $matches[4] ?? $line,
+            ];
+        }, $recent);
     }
 
     public function connections(): View

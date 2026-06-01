@@ -28,6 +28,7 @@ class ProcessBusinessMessagesJob implements ShouldQueue
         public readonly string $connectionId,
         public readonly string $cacheKey,
         public readonly ?string $chatName = null,
+        public readonly bool $isNewContact = false,
     ) {}
 
     public function handle(): void
@@ -67,8 +68,10 @@ class ProcessBusinessMessagesJob implements ShouldQueue
             ->all();
 
         try {
-            $meModeActive = Cache::get("memode_{$this->chatId}", false)
-                || BotSetting::get('me_mode_global', '0') === '1';
+            $meModeActive = ! $this->isNewContact && (
+                Cache::get("memode_{$this->chatId}", false)
+                || BotSetting::get('me_mode_global', '0') === '1'
+            );
 
             $assistant = new TelegramAssistant(
                 meModeEnabled: $meModeActive,

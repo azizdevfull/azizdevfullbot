@@ -101,6 +101,8 @@ class TelegramWebhookController extends Controller
         $messageId = $message['message_id'];
         $text = $message['text'] ?? $message['caption'] ?? '';
 
+        $isNewContact = ! ChatMessage::where('chat_id', $chatId)->exists();
+
         $chatLang = ChatLanguage::where('chat_id', $chatId)->first();
         $globalAi = BotSetting::get('ai_enabled', '1') === '1';
         $perChatAi = $chatLang?->ai_enabled ?? true;
@@ -284,7 +286,7 @@ class TelegramWebhookController extends Controller
             if ($isAiEnabled && isset($message['sticker'])) {
                 $stickerEmoji = $message['sticker']['emoji'] ?? '🎭';
                 $chatName = $this->resolveChatName($message['chat'] ?? []);
-                $this->debounceAiReply($chatId, $connectionId, "{$stickerEmoji} [Stiker]", $chatName);
+                $this->debounceAiReply($chatId, $connectionId, "{$stickerEmoji} [Stiker]", $chatName, $isNewContact);
 
                 return;
             }
@@ -295,7 +297,7 @@ class TelegramWebhookController extends Controller
 
         if ($isAiEnabled) {
             $chatName = $this->resolveChatName($message['chat'] ?? []);
-            $this->debounceAiReply($chatId, $connectionId, $text, $chatName);
+            $this->debounceAiReply($chatId, $connectionId, $text, $chatName, $isNewContact);
         }
     }
 
@@ -318,7 +320,7 @@ class TelegramWebhookController extends Controller
         (new BotAdmin($chatId))->handle($text);
     }
 
-    private function debounceAiReply(int|string $chatId, string $connectionId, string $text, ?string $chatName = null): void
+    private function debounceAiReply(int|string $chatId, string $connectionId, string $text, ?string $chatName = null, bool $isNewContact = false): void
     {
         $cacheKey = "telegram_pending_{$chatId}";
         $lockKey = "telegram_job_{$chatId}";
@@ -330,7 +332,7 @@ class TelegramWebhookController extends Controller
 
         if (! Cache::has($lockKey)) {
             Cache::put($lockKey, true, $delay);
-            ProcessBusinessMessagesJob::dispatch($chatId, $connectionId, $cacheKey, $chatName)
+            ProcessBusinessMessagesJob::dispatch($chatId, $connectionId, $cacheKey, $chatName, $isNewContact)
                 ->delay(now()->addSeconds($delay));
         }
     }

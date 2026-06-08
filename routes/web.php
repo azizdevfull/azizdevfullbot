@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\LearnController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\SmartHomeController;
 use App\Http\Controllers\TelegramWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -63,5 +64,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('learn/{chatId}/review', [LearnController::class, 'review'])->name('learn.review');
         Route::post('learn/{chatId}/save', [LearnController::class, 'save'])->name('learn.save');
         Route::post('learn/{chatId}/reject', [LearnController::class, 'reject'])->name('learn.reject');
+
+        Route::prefix('smart-home')->name('smart-home.')->group(function () {
+            Route::get('/', [SmartHomeController::class, 'index'])->name('index');
+            Route::post('devices', [SmartHomeController::class, 'addDevice'])->name('devices.add');
+            Route::delete('devices/{deviceId}', [SmartHomeController::class, 'removeDevice'])->name('devices.remove');
+            Route::post('{deviceId}/toggle', [SmartHomeController::class, 'toggle'])->name('toggle');
+            Route::post('{deviceId}/state', [SmartHomeController::class, 'setState'])->name('state');
+        });
     });
 });

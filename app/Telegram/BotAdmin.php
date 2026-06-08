@@ -7,6 +7,7 @@ use App\Models\BusinessConnection;
 use App\Models\ChatLanguage;
 use App\Models\ChatMessage;
 use App\Models\TelegramCommand;
+use App\Services\TuyaService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -64,7 +65,8 @@ class BotAdmin
             'prompt' => $this->startWaiting('ai_prompt', "✍️ Yangi <b>AI instructions</b> yuboring:\n\n<i>Bekor qilish: /cancel</i>"),
             'meprompt' => $this->startWaiting('me_prompt', "🎭 Yangi <b>Me Mode instructions</b> yuboring:\n\n<i>Bekor qilish: /cancel</i>"),
             'cancel' => $this->cancelWaiting(),
-            default => null,
+            'smarthome', 'home' => $this->showSmartHome(),
+            default => str_starts_with($command, 'smarthome_') ? $this->handleSmartHomeCallback($command) : null,
         };
     }
 
@@ -109,6 +111,9 @@ class BotAdmin
             [
                 ['text' => '✍️ AI Prompt', 'callback_data' => 'prompt'],
                 ['text' => '🎭 Me Prompt', 'callback_data' => 'meprompt'],
+            ],
+            [
+                ['text' => '🏠 Smart Home', 'callback_data' => 'smarthome'],
             ],
             [
                 ['text' => '🔄 Yangilash', 'callback_data' => 'status'],
@@ -536,6 +541,88 @@ class BotAdmin
     {
         Cache::forget("bot_admin_waiting_{$this->chatId}");
         $this->send('❌ Bekor qilindi.', ['inline_keyboard' => [[['text' => '🔙 Menyu', 'callback_data' => 'status']]]]);
+    }
+
+    private function showSmartHome(): void
+    {
+        $tuya = app(TuyaService::class);
+        $deviceIds = json_decode(BotSetting::get('tuya_device_ids', '[]'), true) ?? [];
+
+        if (empty($deviceIds)) {
+            $this->send(
+                "🏠 <b>Smart Home</b>\n\n⚠️ Qurilmalar sozlanmagan.\nAdmin paneldan Device ID qo'shing.",
+                ['inline_keyboard' => [[['text' => '🔙 Menyu', 'callback_data' => 'status']]]]
+            );
+
+            return;
+        }
+
+        $lines = [];
+        $buttons = [];
+
+        foreach ($deviceIds as $deviceId) {
+            $info = $tuya->getDeviceInfo($deviceId);
+            $switches = $tuya->getSwitches($deviceId);
+            $name = $info['name'] ?? $deviceId;
+            $online = $info['online'] ?? null;
+
+            $onlineIcon = $online === true ? '🟢' : ($online === false ? '🔴' : '⚪');
+            $lines[] = "{$onlineIcon} <b>{$name}</b>";
+
+            if ($switches === null) {
+                $lines[] = '  ⚠️ API xatolik';
+            } else {
+                foreach ($switches as $switch) {
+                    $icon = $switch['value'] ? '💡' : '🌑';
+                    $status = $switch['value'] ? 'Yoqiq' : "O'chiq";
+                    $lines[] = "  {$icon} {$switch['label']}: {$status}";
+
+                    $btnIcon = $switch['value'] ? '🔴' : '🟢';
+                    $btnLabel = $switch['value'] ? "O'chir" : 'Yoq';
+                    $callbackData = 'smarthome_'.$deviceId.'_'.$switch['code'];
+                    $buttons[] = [['text' => "{$btnIcon} {$name} — {$switch['label']} {$btnLabel}", 'callback_data' => $callbackData]];
+                }
+            }
+        }
+
+        $buttons[] = [['text' => '🔄 Yangilash', 'callback_data' => 'smarthome']];
+        $buttons[] = [['text' => '🔙 Menyu', 'callback_data' => 'status']];
+
+        $this->send(
+            "🏠 <b>Smart Home</b>\n\n".implode("\n", $lines),
+            ['inline_keyboard' => $buttons]
+        );
+    }
+
+    private function handleSmartHomeCallback(string $command): void
+    {
+        // Format: smarthome_{deviceId}_{switchCode}
+        // switchCode is always "switch_N" — split on last underscore before "switch"
+        $withoutPrefix = substr($command, strlen('smarthome_'));
+
+        // Find "switch_" from the right side
+        $switchPos = strrpos($withoutPrefix, '_switch_');
+
+        if ($switchPos === false) {
+            return;
+        }
+
+        $deviceId = substr($withoutPrefix, 0, $switchPos);
+        $switchCode = substr($withoutPrefix, $switchPos + 1);
+
+        $tuya = app(TuyaService::class);
+        $newState = $tuya->toggleSwitch($deviceId, $switchCode);
+
+        if ($newState === null) {
+            $this->send(
+                '⚠️ Qurilmaga ulanishda xatolik.',
+                ['inline_keyboard' => [[['text' => '🔙 Smart Home', 'callback_data' => 'smarthome']]]]
+            );
+
+            return;
+        }
+
+        $this->showSmartHome();
     }
 
     private function saveAiPrompt(string $text): void

@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'tuya' => [
+        'base_url' => env('TUYA_BASE_URL', 'https://openapi.tuyaeu.com'),
+        'client_id' => env('TUYA_CLIENT_ID'),
+        'access_secret' => env('TUYA_ACCESS_SECRET'),
+    ],
+
 ];

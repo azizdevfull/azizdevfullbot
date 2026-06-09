@@ -100,14 +100,21 @@ class AdminController extends Controller
     {
         $today = now()->startOfDay();
 
+        $settings = BotSetting::whereIn('key', ['ai_enabled', 'working_hours_enabled'])
+            ->pluck('value', 'key');
+
+        $todayRow = ChatMessage::where('created_at', '>=', $today)
+            ->selectRaw('COUNT(*) as total, SUM(role = "assistant" AND is_manual = 0) as ai_replies')
+            ->first();
+
         return view('admin.dashboard', [
             'connectionsCount' => BusinessConnection::count(),
             'chatsCount' => ChatLanguage::count(),
             'commandsCount' => TelegramCommand::count(),
-            'aiEnabled' => BotSetting::get('ai_enabled', '1') === '1',
-            'workingHoursEnabled' => BotSetting::get('working_hours_enabled', '0') === '1',
-            'todayMessages' => ChatMessage::where('created_at', '>=', $today)->count(),
-            'todayAiReplies' => ChatMessage::where('role', 'assistant')->where('is_manual', false)->where('created_at', '>=', $today)->count(),
+            'aiEnabled' => ($settings['ai_enabled'] ?? '1') === '1',
+            'workingHoursEnabled' => ($settings['working_hours_enabled'] ?? '0') === '1',
+            'todayMessages' => (int) $todayRow->total,
+            'todayAiReplies' => (int) $todayRow->ai_replies,
             'recentLogs' => $this->getRecentLogs(5),
         ]);
     }
@@ -117,28 +124,39 @@ class AdminController extends Controller
         $today = now()->startOfDay();
         $sevenDaysAgo = now()->subDays(7)->startOfDay();
 
-        // General stats
-        $totalMessages = ChatMessage::count();
-        $totalAiReplies = ChatMessage::where('role', 'assistant')->where('is_manual', false)->count();
-        $totalManualReplies = ChatMessage::where('role', 'assistant')->where('is_manual', true)->count();
-        $totalVoiceMessages = ChatMessage::where('content', 'like', '%🎤 [Ovozli xabar%')->count();
+        $totals = ChatMessage::selectRaw('
+            COUNT(*) as total,
+            SUM(role = "assistant" AND is_manual = 0) as ai_replies,
+            SUM(role = "assistant" AND is_manual = 1) as manual_replies,
+            SUM(content LIKE "%🎤 [Ovozli xabar%") as voice_messages
+        ')->first();
 
-        // Today's stats
+        $todayRow = ChatMessage::where('created_at', '>=', $today)
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(role = "assistant" AND is_manual = 0) as ai,
+                SUM(role = "user") as user,
+                SUM(role = "user" AND content LIKE "%🎤 [Ovozli xabar%") as voice
+            ')->first();
+
+        $totalMessages = (int) $totals->total;
+        $totalAiReplies = (int) $totals->ai_replies;
+        $totalManualReplies = (int) $totals->manual_replies;
+        $totalVoiceMessages = (int) $totals->voice_messages;
+
         $todayStats = [
-            'total' => ChatMessage::where('created_at', '>=', $today)->count(),
-            'ai' => ChatMessage::where('role', 'assistant')->where('is_manual', false)->where('created_at', '>=', $today)->count(),
-            'user' => ChatMessage::where('role', 'user')->where('created_at', '>=', $today)->count(),
-            'voice' => ChatMessage::where('role', 'user')->where('content', 'like', '%🎤 [Ovozli xabar%')->where('created_at', '>=', $today)->count(),
+            'total' => (int) $todayRow->total,
+            'ai' => (int) $todayRow->ai,
+            'user' => (int) $todayRow->user,
+            'voice' => (int) $todayRow->voice,
         ];
 
-        // Chart data: Messages per day (last 7 days)
         $dailyStats = ChatMessage::selectRaw('DATE(created_at) as date, count(*) as count')
             ->where('created_at', '>=', $sevenDaysAgo)
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
-        // Language distribution
         $langStats = ChatLanguage::select('language_code', DB::raw('count(*) as count'))
             ->groupBy('language_code')
             ->orderByDesc('count')

@@ -63,7 +63,7 @@ class AdminController extends Controller
 
         Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
             'chat_id' => $chatId,
-            'text' => "🔐 Admin panel kirish kodi:\n\n<b>{$otp}</b>\n\n5 daqiqa amal qiladi.",
+            'text' => "🔐 Admin panel kirish kodi:\n\n<code>{$otp}</code>\n\n5 daqiqa amal qiladi.",
             'parse_mode' => 'HTML',
         ]);
 

@@ -5,14 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bot Admin – Kirish</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <style>
-        .gradient-btn { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
-        .gradient-btn:hover { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
-        .otp-input { letter-spacing: .4em; }
-        [x-cloak] { display: none !important; }
-    </style>
 </head>
-<body class="min-h-screen font-sans antialiased flex items-center justify-center relative overflow-hidden" style="background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)">
+<body class="login-bg min-h-screen font-sans antialiased flex items-center justify-center relative overflow-hidden">
 
     {{-- Background orbs --}}
     <div class="absolute inset-0 overflow-hidden pointer-events-none">

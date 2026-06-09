@@ -6,14 +6,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Bot Admin – @yield('title', 'Dashboard')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <style>
-        .toggle-switch input:checked ~ .toggle-track { background: #6366f1; }
-        .toggle-switch input:checked ~ .toggle-track .toggle-thumb { transform: translateX(1.25rem); }
-        .card-hover { transition: box-shadow .2s, transform .2s; }
-        .card-hover:hover { box-shadow: 0 8px 30px -8px rgba(99,102,241,.18); transform: translateY(-1px); }
-        .gradient-btn { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
-        .gradient-btn:hover { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
-    </style>
 </head>
 <body class="h-full font-sans antialiased text-slate-900">
 

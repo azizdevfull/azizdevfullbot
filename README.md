@@ -1,7 +1,7 @@
 # AzizDevFull — Telegram AI Personal Assistant (Digital Twin)
 
 Shaxsiy Telegram akkauntingiz uchun "Raqamli Egizak" (Digital Twin). Siz band bo'lganingizda yoki vaqtingiz bo'lmaganda, AI sizning nomingizdan muloqot qiladi. Asosiy maqsad — suhbatdoshga AI yozayotganini bildirmasdan, sizning uslubingizda suhbatni davom ettirish. 
- 
+  
 ---
 
 ## Imkoniyatlar

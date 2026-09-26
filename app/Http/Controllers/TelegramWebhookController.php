@@ -104,6 +104,13 @@ class TelegramWebhookController extends Controller
         $isNewContact = ! ChatMessage::where('chat_id', $chatId)->exists();
 
         $chatLang = ChatLanguage::where('chat_id', $chatId)->first();
+
+        $resolvedChatName = $this->resolveChatName($message['chat'] ?? []);
+
+        if ($resolvedChatName !== null && $chatLang?->chat_name !== $resolvedChatName) {
+            $chatLang = ChatLanguage::updateOrCreate(['chat_id' => $chatId], ['chat_name' => $resolvedChatName]);
+        }
+
         $globalAi = BotSetting::get('ai_enabled', '1') === '1';
         $perChatAi = $chatLang?->ai_enabled ?? true;
         $isAiEnabled = $globalAi && $perChatAi;
@@ -182,7 +189,7 @@ class TelegramWebhookController extends Controller
         if ($isFromOwner) {
             // Kill switch for /repeat command
             // We use a dedicated stop flag that lasts 30 minutes
-            Cache::put("repeat_stop_{$chatId}", true, now()->addMinutes(30));
+            Cache::put(SendRepeatedMessageJob::stopKey($chatId), true, now()->addMinutes(30));
 
             if (str_starts_with($text, '/')) {
                 $commandParts = explode(' ', ltrim(explode('@', $text)[0], '/'));
@@ -198,21 +205,17 @@ class TelegramWebhookController extends Controller
                 if ($command === 'repeat') {
                     $this->deleteBusinessMessages($chatId, [$messageId], $connectionId);
 
-                    // Clear stop flag for a new repeat command
-                    Cache::forget("repeat_stop_{$chatId}");
-
                     if (count($commandParts) >= 3) {
                         $count = (int) $commandParts[1];
                         // Merge the rest of parts as the message
                         $messageToRepeat = implode(' ', array_slice($commandParts, 2));
 
                         if ($count > 0 && ! empty($messageToRepeat)) {
-                            SendRepeatedMessageJob::dispatch(
+                            SendRepeatedMessageJob::start(
                                 $chatId,
                                 $connectionId,
-                                min($count, 500), // Hard limit for safety
-                                $messageToRepeat,
-                                config('telegram.bot_token')
+                                min($count, (int) config('telegram.repeat.max_count')),
+                                $messageToRepeat
                             );
                         }
                     }

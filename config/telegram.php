@@ -16,6 +16,15 @@ return [
 
     'debounce_seconds' => env('TELEGRAM_DEBOUNCE_SECONDS', 3),
 
+    /*
+     * /repeat command: max allowed count, messages sent per queued job and delay between messages.
+     */
+    'repeat' => [
+        'max_count' => (int) env('TELEGRAM_REPEAT_MAX_COUNT', 1000000),
+        'chunk_size' => (int) env('TELEGRAM_REPEAT_CHUNK_SIZE', 50),
+        'delay_ms' => (int) env('TELEGRAM_REPEAT_DELAY_MS', 1000),
+    ],
+
     'ai_instructions' => '
 Sen Azizbek Isroilovning shaxsiy Telegram yordamchisisisan.
 Azizbek — tajribali Laravel va PHP dasturchisi, shuningdek Telegram bot ishlab chiqaruvchisi.
